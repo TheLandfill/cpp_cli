@@ -63,7 +63,7 @@ As it currently stands, this library can handle standard types that can be conve
 
 This library, however, does not natively support bool types, as it prefers to set a variable and check if it was set or what it was set to.
 
-When using an argument that does not take subarguments, the variable will be set to whatever the subargument is. For instance, if the flag "-s" does not take arguments, it will set its corresponding variable to "s". Likewise, "--stop-early" will set its corresponding variable to "stop-early".
+When using an argument that does not take subarguments, the variable will be set to whatever the subargument is. For instance, if the flag "-s" does not take arguments, it will set its corresponding variable to "s". Likewise, "--stop-early" will set its corresponding variable to "stop-early". If the argument can be stacked (such as -vvvv), then it will set its variable to "vvvv" for up to eleven stacked characters.
 
 The template specialization itself takes the form
 ```
@@ -100,6 +100,7 @@ int main(int argc, char ** argv){
   int recursion_level = 0;
   std::string show_output = "";
   std::string standard_input = "";
+  char c_version_of_string[20];
 
   {
     // Both filename and recursion_level take args, so their third argument is true
@@ -111,6 +112,9 @@ int main(int argc, char ** argv){
     
     // A single hyphen means standard input, but it doesn't have to. If you want, add the line
     Command_Line_Var<std::string> standard_input_var(&standard_input, { "-" }, false);
+    
+    // A char * has type char in the template and doesn't take the address of the variable.
+    Command_Line_Var<char> c_version_of_string_var(c_version_of_string, { "v" }, false);
     hash(argc, argv);
   }
   
