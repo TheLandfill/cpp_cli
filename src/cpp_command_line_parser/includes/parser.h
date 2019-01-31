@@ -40,6 +40,9 @@ public:
 std::vector<const char *> hash_cmd_line_into_variables(int argc, char ** argv, size_t num_unique_flags = 1000);
 
 template<>
+void Command_Line_Var<char>::set_base_variable(const char * b_v);
+
+template<>
 void Command_Line_Var<int>::set_base_variable(const char * b_v);
 
 template<>

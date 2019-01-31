@@ -14,6 +14,7 @@ int main(int argc, char ** argv) {
 	std::string flag2 = "false";
 	double probability_of_success = 0.0001;
 	std::string standard_input_hyphen = "";
+	char verbosity[20] = "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
 
 	// non_options is a vector of args that did not start with a hyphen, did not
 	// start with a double hyphen, or came after the special argument "--".
@@ -70,6 +71,7 @@ int main(int argc, char ** argv) {
 		Command_Line_Var<std::string> flag_var(&flag, { "flag", "l" }, false);
 		Command_Line_Var<std::string> flag2_var(&flag2, { "flag2", "a" }, false);
 		Command_Line_Var<double> probability_of_success_var(&probability_of_success, { "p", "prob", "probability" }, true);
+		Command_Line_Var<char> verbosity_var(verbosity, { "v" }, false);
 
 		// Generally, the solitary hyphen flag is used to indicate that the
 		// program should take in standard input. The library will tell you that
@@ -90,6 +92,7 @@ int main(int argc, char ** argv) {
 	std::cout << "flag2:\t\t" << flag2 << std::endl;
 	std::cout << "probability_of_success:\t" << probability_of_success << std::endl;
 	std::cout << "standard_input_hyphen:\t" << standard_input_hyphen << std::endl;
+	std::cout << "verbosity:\t" << verbosity << std::endl;
 	for (size_t i = 0; i < non_options.size(); i++) {
 		std::cout << "NON_OPTION " << i << ":\t" << non_options[i] << std::endl;
 	}

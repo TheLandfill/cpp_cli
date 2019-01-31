@@ -112,6 +112,7 @@ This project is licensed under the MIT License - see the LICENSE.md file for det
 1. Make Windows specific compilation.
     1. ~~Make sure that symlinks work on Windows.~~
     1. Either convert Makefiles to CMake or roll my own Project for Visual Studio.
+1. Fix response to nonexistant flags.
 1. Add helpful error messages.
     1. Currently, the program will convert strings into 0 if the argument takes a numeric argument.
         For example, `--prob=test` will set prob to 0.0, because prob is a double.

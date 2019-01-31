@@ -73,6 +73,20 @@ std::vector<const char *> hash_cmd_line_into_variables(int argc, char ** argv, s
 					break;
 				}
 			}
+
+			// case -vvv
+			char temp_repetition[12] = "\0\0\0\0\0\0\0\0\0\0\0";
+			bool repeated_short_arguments = false;
+			while (multiple_short_arguments && argv[i][j] != '\0' && argv[i][j] == argv[i][1] && j < 12) {
+				repeated_short_arguments = true;
+				temp_repetition[j - 1] = argv[i][j];
+				j++;
+			}
+			if (repeated_short_arguments) {
+				temp_alias[0] = temp_repetition[0];
+				command_line_settings_map[temp_alias]->set_base_variable(temp_repetition);
+			}
+				
 			// case -abc
 			while (multiple_short_arguments && argv[i][j] != '\0') {
 				temp_alias[0] = argv[i][j];
@@ -88,6 +102,17 @@ std::vector<const char *> hash_cmd_line_into_variables(int argc, char ** argv, s
 	}
 	list_of_cmd_var.clear();
 	return non_options;
+}
+
+template<>
+void Command_Line_Var<char>::set_base_variable(const char * b_v) {
+	char * base_variable_string = (char *)base_variable;
+	int i = 0;
+	while (b_v[i] != '\0') {
+		base_variable_string[i] = b_v[i];
+		i++;
+	}
+	base_variable_string[i] = '\0';
 }
 
 template<>
