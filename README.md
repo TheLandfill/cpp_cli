@@ -116,6 +116,7 @@ This project is licensed under the MIT License - see the LICENSE.md file for det
     1. Currently, the program will convert strings into 0 if the argument takes a numeric argument.
         For example, `--prob=test` will set prob to 0.0, because prob is a double.
     2. Other examples will come up whenever I encounter more errors.
+1. Add feature to stack
 1. Verify that this code runs on Mac.
 1. Add a help message for the test program.
 1. Clean up the test program, specifically by moving all the comments to better locations.
@@ -123,3 +124,4 @@ This project is licensed under the MIT License - see the LICENSE.md file for det
 1. Refine README
 1. Run more tests, specifically trying to simulate command line response in standard Linux tools.
     1. `wget` in particular looks perfect for this, with the notable exception of non-standard command-line arguments, such as -nc, which the library would treat as --nc.
+    1. `gcc` is probably not a good idea for me alone to implement, however I made sure that cpp_args_parser can handle up to 5000 aliases, which is more than enough for gcc to handle.
