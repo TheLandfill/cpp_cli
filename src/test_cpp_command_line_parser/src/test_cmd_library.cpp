@@ -80,7 +80,7 @@ int main(int argc, char ** argv) {
 
 		// Non options must be declared outside the scope unless you don't
 		// need to use them.
-		non_options = hash(argc, argv);
+		non_options = hash_cmd_line_into_variables(argc, argv);
 	}
 
 	// This section just prints out the values to demonstrate that hash worked.

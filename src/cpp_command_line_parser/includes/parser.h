@@ -1,5 +1,6 @@
 #ifndef CPP_CMD_LINE_PARSER_H
 #define CPP_CMD_LINE_PARSER_H
+#include <cstddef>
 #include <vector>
 
 class Command_Line_Var_Interface {
@@ -36,7 +37,7 @@ public:
 	}
 };
 
-std::vector<const char *> hash(int argc, char ** argv);
+std::vector<const char *> hash_cmd_line_into_variables(int argc, char ** argv, size_t num_unique_flags = 1000);
 
 template<>
 void Command_Line_Var<int>::set_base_variable(const char * b_v);

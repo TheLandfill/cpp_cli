@@ -1,6 +1,7 @@
 #ifndef COMMAND_LINE_VAR_HASH_TABLE_H
 #define COMMAND_LINE_VAR_HASH_TABLE_H
 #include <vector>
+#include <cstddef>
 
 class Command_Line_Var_Interface;
 
@@ -10,9 +11,11 @@ struct Hash_Table_Registration {
 	Hash_Table_Registration();
 };
 
-// WARNING: THIS HASH TABLE ONLY WORKS FOR LESS THAN 830 ELEMENTS
+// WARNING: THIS HASH TABLE ONLY WORKS FOR LESS THAN 5100 ELEMENTS
 // UNLESS YOU INITIALIZE IT WITH A PRIME NUMBER SIZE AND DO NOT
-// RESIZE IT. 830 is 41^2 / 2.
+// RESIZE IT. 5100 is 101^2 / 2. Also, this is defined specifically
+// for command line argument parsing, so you should definitely have
+// less than 5100 different aliases.
 class Hash_Table {
 private:
 	size_t hash_multiple = 31;
