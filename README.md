@@ -59,7 +59,7 @@ where `T` is the type of the variable and `variable_name_var` is a stack allocat
 Note that cpp_args_parser does not force you to use any of the commonly reserved short options at the bottom of the list, nor does it treat them any differently than any other options, nor does it reserve them. It is up to the user to maintain this standard. Furthermore, the special option "-" is treated just like any other option, so it is not reserved for standard input either. Finally, the special argument "--" will turn any arguments that come after it into non-options.
 
 ### Types the Library Can Handle
-As it currently stands, this library can handle standard types that can be converted from a char \*, which include all numeric types, std::string, and char \*. To extend the library to handle other types, you need to either add a template specialization, which is what I have done for the numeric types, or overload the "=" operator to take in char \*, which is what std::string has done.
+As it currently stands, this library can handle standard types that can be converted from a char \*, which include all numeric types, std::string, and char \* (char \* has a slightly different syntax which will be discussed below). To extend the library to handle other types, you need to either add a template specialization, which is what I have done for the numeric types, or overload the "=" operator to take in char \*, which is what std::string has done.
 
 This library, however, does not natively support bool types, as it prefers to set a variable and check if it was set or what it was set to.
 
@@ -78,6 +78,19 @@ virtual void set_base_variable(const char * b_v) {
     *(T *)base_variable = b_v;
 }
 ```
+#### How to handle a `char *`
+Instead of creating a `Command_Line_Var<char *>` with the address of the variable containing the char \*, you should create a `Command_Line_Var<char>` with the char \* as its first argument.
+
+```
+char example_string[20];
+// INVALID
+Command_Line_Var<char *> example_string_var(&example_string, ..., ...);
+// VALID
+Command_Line_Var<char> example_string_var(example_string, ..., ...);
+```
+
+Furthermore, you should allocate enough memory to store the longest argument you expect to receive. If you do not, you run the risk of a segmentation fault, and there is nothing the library can do to fix it or notify you that your buffer is too small.
+
 ### Example Usage
 ```
 #include "parser.h"
@@ -106,18 +119,18 @@ int main(int argc, char ** argv){
 ```
 
 ## License
-This project is licensed under the MIT License - see the LICENSE.md file for details
+This project is licensed under the MIT License - see the LICENSE.md file for details.
 
 ## Goals
 1. Make Windows specific compilation.
     1. ~~Make sure that symlinks work on Windows.~~
     1. Either convert Makefiles to CMake or roll my own Project for Visual Studio.
-1. Fix response to nonexistant flags.
+1. Fix response to nonexistant flags. Right now, it just crashes the program with a seg fault. I can either make it ignore them or treat them as non-options.
+1. ~~Add support for repeated single flags, such as `-vvvv` meaning level four verboseness.~~
 1. Add helpful error messages.
     1. Currently, the program will convert strings into 0 if the argument takes a numeric argument.
-        For example, `--prob=test` will set prob to 0.0, because prob is a double.
+       For example, `--prob=test` will set prob to 0.0, because prob is a double.
     2. Other examples will come up whenever I encounter more errors.
-1. Add feature to stack
 1. Verify that this code runs on Mac.
 1. Add a help message for the test program.
 1. Clean up the test program, specifically by moving all the comments to better locations.
@@ -125,4 +138,4 @@ This project is licensed under the MIT License - see the LICENSE.md file for det
 1. Refine README
 1. Run more tests, specifically trying to simulate command line response in standard Linux tools.
     1. `wget` in particular looks perfect for this, with the notable exception of non-standard command-line arguments, such as -nc, which the library would treat as --nc.
-    1. `gcc` is probably not a good idea for me alone to implement, however I made sure that cpp_args_parser can handle up to 5000 aliases, which is more than enough for gcc to handle.
+    1. It is not a good idea for me to try to implement all the flags for `gcc`, but I made sure that cpp_args_parser can handle up to 5000 aliases, which is more than enough for gcc (which has around 2000) to handle.
