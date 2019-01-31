@@ -109,7 +109,9 @@ This project is licensed under the MIT License - see the LICENSE.md file for det
     1. ~~Make sure that symlinks work on Windows.~~
     1. Either convert Makefiles to CMake or roll my own Project for Visual Studio.
 1. Add helpful error messages.
-    1. Currently, the program will just crash if you provide the wrong argument.
+    1. Currently, the program will convert strings into 0 if the argument takes a numeric argument.
+        For example, `--prob=test` will set prob to 0.0, because prob is a double.
+    2. Other examples will come up whenever I encounter more errors.
 1. Verify that this code runs on Mac.
 1. Add a help message for the test program.
 1. Clean up the test program, specifically by moving all the comments to better locations.
