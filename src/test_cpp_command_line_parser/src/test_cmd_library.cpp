@@ -71,7 +71,7 @@ int main(int argc, char ** argv) {
 		Command_Line_Var<std::string> flag_var(&flag, { "flag", "l" }, false);
 		Command_Line_Var<std::string> flag2_var(&flag2, { "flag2", "a" }, false);
 		Command_Line_Var<double> probability_of_success_var(&probability_of_success, { "p", "prob", "probability" }, true);
-		Command_Line_Var<char> verbosity_var(verbosity, { "v" }, false);
+		Command_Line_Var<char> verbosity_var(verbosity, { "v" }, false, 20);
 
 		// Generally, the solitary hyphen flag is used to indicate that the
 		// program should take in standard input. The library will tell you that

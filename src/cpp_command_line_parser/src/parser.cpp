@@ -1,5 +1,5 @@
-#include "../includes/parser.h"
-#include "../includes/hash_table.h"
+#include "parser.h"
+#include "hash_table.h"
 #include <cstdlib>
 #include <stdexcept>
 
@@ -8,6 +8,8 @@ static std::vector<Command_Line_Var_Interface *> list_of_cmd_var;
 Command_Line_Var_Interface::Command_Line_Var_Interface(void * b_v, std::vector<const char *> a, bool ta) : takes_args_var(ta), base_variable(b_v), aliases(a) {
 	list_of_cmd_var.push_back(this);
 }
+
+Command_Line_Var<char>::Command_Line_Var(void * b_v, std::vector<const char *> a, bool ta, int b_s) : Command_Line_Var_Interface(b_v, a, ta), buffer_size(b_s) {}
 
 bool Command_Line_Var_Interface::takes_args() {
 	return takes_args_var;
@@ -38,7 +40,7 @@ std::vector<const char *> hash_cmd_line_into_variables(int argc, char ** argv, s
 				}
 			}
 			if (command_line_settings_map.count(temp_alias) == 0) {
-				char error_message[54] = "Unrecognized Option:\t\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
+				char error_message[54] = "Unrecognized Option: \0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
 				int error_message_iterator = 21;
 				while (error_message_iterator < 53 && temp_alias[error_message_iterator - 21] != '\0') {
 					error_message[error_message_iterator] = temp_alias[error_message_iterator - 21];
@@ -51,7 +53,7 @@ std::vector<const char *> hash_cmd_line_into_variables(int argc, char ** argv, s
 				if (command_line_settings_map[temp_alias]->takes_args()) {
 					command_line_settings_map[temp_alias]->set_base_variable(temp_alias + split_location);
 				} else {
-					char error_message[] = "Option does not take arguments:\t\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
+					char error_message[] = "Option does not take arguments: \0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
 					int error_message_iterator = 32;
 					while (error_message_iterator < 64 && temp_alias[error_message_iterator - 32] != '\0') {
 						error_message[error_message_iterator] = temp_alias[error_message_iterator - 32];
@@ -77,7 +79,7 @@ std::vector<const char *> hash_cmd_line_into_variables(int argc, char ** argv, s
 			char temp_alias[2] = "\0";
 			temp_alias[0] = argv[i][1];
 			if (command_line_settings_map.count(temp_alias) == 0) {
-				char error_message[21 + 2] = "Unrecognized Option:\t\0";
+				char error_message[21 + 2] = "Unrecognized Option: \0";
 				error_message[21] = argv[i][1];
 				throw std::invalid_argument(error_message);
 			}
@@ -97,7 +99,7 @@ std::vector<const char *> hash_cmd_line_into_variables(int argc, char ** argv, s
 					if (command_line_settings_map[temp_alias]->takes_args()) {
 						command_line_settings_map[temp_alias]->set_base_variable(argv[i] + 2);
 					} else {
-						char error_message[] = "Option does not take arguments:\t\0";
+						char error_message[] = "Option does not take arguments: \0";
 						error_message[32] = argv[i][1];
 						throw std::invalid_argument(error_message);
 					}
@@ -136,11 +138,10 @@ std::vector<const char *> hash_cmd_line_into_variables(int argc, char ** argv, s
 	return non_options;
 }
 
-template<>
 void Command_Line_Var<char>::set_base_variable(const char * b_v) {
 	char * base_variable_string = (char *)base_variable;
 	int i = 0;
-	while (b_v[i] != '\0') {
+	while (b_v[i] != '\0' && i < buffer_size) {
 		base_variable_string[i] = b_v[i];
 		i++;
 	}
@@ -191,5 +192,3 @@ template<>
 void Command_Line_Var<long double>::set_base_variable(const char * b_v) {
 	*(long double *)base_variable = strtold(b_v, nullptr);
 }
-
-
