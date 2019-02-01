@@ -5,6 +5,8 @@ LIBDIR	:= ../libs
 SRCDIR  := ../src
 OBJDIR  := ../obj
 
+MKDIR_P = mkdir -p
+
 CXX := g++
 LINKER := g++
 INCLUDES := -I$(INCDIR)
@@ -23,11 +25,11 @@ LIB := $(wildcard $(LIBDIR)/lib*.a)
 
 # $^ is list of dependencies and $@ is the target file
 # Link all the object files or make a library
-$(BINDIR)/$(PRODUCT): $(OBJ) $(LIB)
+$(BINDIR)/$(PRODUCT): directories $(OBJ) $(LIB)
 # 	Make a library
-	ar rcs $(BINDIR)/$(PRODUCT) $^
+	ar rcs $(BINDIR)/$(PRODUCT) $(OBJ) $(LIB)
 #	Make a program
-#	$(LINKER) $(CXXFLAGS) $^ -o $@
+#	$(LINKER) $(CXXFLAGS) $(OBJ) $(LIB) -o $@
 
 # Compile individual .cpp source files into object files
 $(OBJDIR)/%.o: $(SRCDIR)/%.cpp
@@ -40,6 +42,13 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.cpp
 #	$(CXX) $(INCLUDES) -MM $< | sed -e 's%^%$@ %' -e 's% % $(OBJDIR)/%' > $@
 
 -include $(DEP)
+
+.PHONY: directories
+
+directories: $(OBJDIR)
+
+$(OBJDIR):
+	$(MKDIR_P) $(OBJDIR)
 
 .PHONY: clean
 
