@@ -56,6 +56,7 @@ where `T` is the type of the variable and `variable_name_var` is a stack allocat
 >   - -h = print some help text
 >   - -o file = output to file
 >   - -f = force (don't prompt for confirmation of dangerous actions, just do them)
+
 Note that cpp_args_parser does not force you to use any of the commonly reserved short options at the bottom of the list, nor does it treat them any differently than any other options, nor does it reserve them. It is up to the user to maintain this standard. Furthermore, the special option "-" is treated just like any other option, so it is not reserved for standard input either. Finally, the special argument "--" will turn any arguments that come after it into non-options.
 
 ### Types the Library Can Handle
@@ -130,6 +131,7 @@ This project is licensed under the MIT License - see the LICENSE.md file for det
     1. ~~Make sure that symlinks work on Windows.~~
     1. Either convert Makefiles to CMake or roll my own Project for Visual Studio.
 1. Fix response to nonexistant flags. Right now, it just crashes the program with a seg fault. I can either make it ignore them or treat them as non-options.
+1. Fix the potential seg fault of writing outside the valid range for `char *`.
 1. ~~Add support for repeated single flags, such as `-vvvv` meaning level four verboseness.~~
 1. Add helpful error messages.
     1. Currently, the program will convert strings into 0 if the argument takes a numeric argument.
