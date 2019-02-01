@@ -80,17 +80,22 @@ virtual void set_base_variable(const char * b_v) {
 }
 ```
 #### How to handle a `char *`
-Instead of creating a `Command_Line_Var<char *>` with the address of the variable containing the char \*, you should create a `Command_Line_Var<char>` with the char \* as its first argument.
+Instead of creating a `Command_Line_Var<char *>` with the address of the variable containing the char \*, you should create a `Command_Line_Var<char>` with the char \* as its first argument. It also has a fourth argument which sets the buffer size, and so it cannot have a segmentation fault so long as you have allocated more than the buffer size you provide.
 
 ```
 char example_string[20];
-// INVALID
-Command_Line_Var<char *> example_string_var(&example_string, ..., ...);
+// INVALID: Does not accept char * as a type and the first argument should be a char *, not a char **.
+Command_Line_Var<char *> example_string_var(&example_string, ..., ..., 20);
+// INVALID: You have only allocated 20 bytes but say you can hold 200 in example_string.
+Command_Line_Var<char> example_string_var(example_string, ..., ..., 200);
 // VALID
-Command_Line_Var<char> example_string_var(example_string, ..., ...);
+Command_Line_Var<char> example_string_var(example_string, ..., ..., 20);
 ```
 
 Furthermore, you should allocate enough memory to store the longest argument you expect to receive. If you do not, you run the risk of a segmentation fault, and there is nothing the library can do to fix it or notify you that your buffer is too small.
+
+### Exception Throwing
+The library will throw exceptions (std::invalid_argument) when you provide a flag you did not specify (except for the single hyphen flag for standard input) or provide an argument to a flag that does not take arguments. When the library throws an argument, it will tell you the error and which flag caused the error. The exception will only print around the first 32 characters of the flag. It will also throw an exception (std::length_error) if you try to use more flags than the hash table can handle, which is around 5,000.
 
 ### Example Usage
 ```
@@ -132,7 +137,7 @@ This project is licensed under the MIT License - see the LICENSE.md file for det
     1. ~~Make sure that symlinks work on Windows.~~
 1. ~~Fix response to nonexistant flags. Right now, it just crashes the program with a seg fault. I can either make it ignore them or treat them as non-options.~~
 1. ~~Fix response to providing arguments to options that do not take arguments.~~
-1. Fix the potential seg fault of writing outside the valid range for `char *`.
+1. ~~Fix the potential seg fault of writing outside the valid range for `char *`.~~
 1. ~~Add support for repeated single flags, such as `-vvvv` meaning level four verboseness.~~
 1. Add helpful error messages.
     1. Currently, the program will convert strings into 0 if the argument takes a numeric argument.
