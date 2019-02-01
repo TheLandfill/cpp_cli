@@ -1,6 +1,7 @@
-#include <cstdlib>
 #include "../includes/parser.h"
 #include "../includes/hash_table.h"
+#include <cstdlib>
+#include <stdexcept>
 
 static std::vector<Command_Line_Var_Interface *> list_of_cmd_var;
 
@@ -36,9 +37,28 @@ std::vector<const char *> hash_cmd_line_into_variables(int argc, char ** argv, s
 					break;
 				}
 			}
+			if (command_line_settings_map.count(temp_alias) == 0) {
+				char error_message[54] = "Unrecognized Option:\t\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
+				int error_message_iterator = 21;
+				while (error_message_iterator < 53 && temp_alias[error_message_iterator - 21] != '\0') {
+					error_message[error_message_iterator] = temp_alias[error_message_iterator - 21];
+					error_message_iterator++;
+				}
+				throw std::invalid_argument(error_message);
+			}
 			// case: --long-option=value
 			if (temp_alias[split_location] != '\0') {
-				command_line_settings_map[temp_alias]->set_base_variable(temp_alias + split_location);
+				if (command_line_settings_map[temp_alias]->takes_args()) {
+					command_line_settings_map[temp_alias]->set_base_variable(temp_alias + split_location);
+				} else {
+					char error_message[] = "Option does not take arguments:\t\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
+					int error_message_iterator = 32;
+					while (error_message_iterator < 64 && temp_alias[error_message_iterator - 32] != '\0') {
+						error_message[error_message_iterator] = temp_alias[error_message_iterator - 32];
+						error_message_iterator++;
+					}
+					throw std::invalid_argument(error_message);
+				}
 			// case: --long-option
 			} else {
 				command_line_settings_map[temp_alias]->set_base_variable(temp_alias);
@@ -54,6 +74,13 @@ std::vector<const char *> hash_cmd_line_into_variables(int argc, char ** argv, s
 			}
 		} else if (argv[i][0] == '-') {
 			int j = 1;
+			char temp_alias[2] = "\0";
+			temp_alias[0] = argv[i][1];
+			if (command_line_settings_map.count(temp_alias) == 0) {
+				char error_message[21 + 2] = "Unrecognized Option:\t\0";
+				error_message[21] = argv[i][1];
+				throw std::invalid_argument(error_message);
+			}
 			// case: -o value
 			if (argv[i][2] == '\0' && i + 1 < argc && command_line_settings_map.count(argv[i] + 1) != 0 && command_line_settings_map[argv[i] + 1]->takes_args()) {
 				command_line_settings_map[argv[i] + 1]->set_base_variable(argv[i + 1]);
@@ -61,14 +88,19 @@ std::vector<const char *> hash_cmd_line_into_variables(int argc, char ** argv, s
 				continue;
 			}
 			// case: -oValue
-			char temp_alias[2] = "\0";
 			bool multiple_short_arguments = true;
 			for (int k = j; argv[i][k] != '\0'; k++) {
 				char temp_string[2] = "\0";
 				temp_string[0] = argv[i][k];
 				if (command_line_settings_map.count(temp_string) == 0) {
 					temp_alias[0] = argv[i][j];
-					command_line_settings_map[temp_alias]->set_base_variable(argv[i] + 2);
+					if (command_line_settings_map[temp_alias]->takes_args()) {
+						command_line_settings_map[temp_alias]->set_base_variable(argv[i] + 2);
+					} else {
+						char error_message[] = "Option does not take arguments:\t\0";
+						error_message[32] = argv[i][1];
+						throw std::invalid_argument(error_message);
+					}
 					multiple_short_arguments = false;
 					break;
 				}
