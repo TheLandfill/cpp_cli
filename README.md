@@ -128,15 +128,18 @@ This project is licensed under the MIT License - see the LICENSE.md file for det
 
 ## Goals
 1. Make Windows specific compilation.
-    1. ~~Make sure that symlinks work on Windows.~~
     1. Either convert Makefiles to CMake or roll my own Project for Visual Studio.
-1. Fix response to nonexistant flags. Right now, it just crashes the program with a seg fault. I can either make it ignore them or treat them as non-options.
+    1. ~~Make sure that symlinks work on Windows.~~
+1. ~~Fix response to nonexistant flags. Right now, it just crashes the program with a seg fault. I can either make it ignore them or treat them as non-options.~~
+1. ~~Fix response to providing arguments to options that do not take arguments.~~
 1. Fix the potential seg fault of writing outside the valid range for `char *`.
 1. ~~Add support for repeated single flags, such as `-vvvv` meaning level four verboseness.~~
 1. Add helpful error messages.
     1. Currently, the program will convert strings into 0 if the argument takes a numeric argument.
        For example, `--prob=test` will set prob to 0.0, because prob is a double.
-    2. Other examples will come up whenever I encounter more errors.
+    1. ~~Add helpful error messages for using invalid flags.~~
+    1. ~~Add helpful error messages for providing arguments to flags that do not take arguments.~~
+    1. Other examples will come up whenever I encounter more errors.
 1. Verify that this code runs on Mac.
 1. Add a help message for the test program.
 1. Clean up the test program, specifically by moving all the comments to better locations.
