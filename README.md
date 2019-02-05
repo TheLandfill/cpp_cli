@@ -1,9 +1,14 @@
 # cpp_args_parser
-This repository consists of a library designed to make parsing command line arguments for c++ easy and efficient and a simple program showing you how it works. While there exist similar libraries such as [GetOpt](https://www.gnu.org/software/libc/manual/html_node/Getopt.html), [commandline](https://archive.codeplex.com/?p=commandline), [CLI11](https://github.com/CLIUtils/CLI11), and [opt](http://www.decompile.com/not_invented_here/opt/), these libraries are either designed with different goals in mind, do far too much for most cases, use weird or complicated syntax, or just outright suck to use. This repository intends to make command line parsing as simple and easy as possible for the user and for the code itself to be easy to read and improve.
+This repository consists of a library designed to make parsing command line arguments for c++ easy and efficient and a simple program showing you how it works. While there exist similar libraries such as [GetOpt](https://www.gnu.org/software/libc/manual/html_node/Getopt.html), [commandline](https://archive.codeplex.com/?p=commandline), [CLI11](https://github.com/CLIUtils/CLI11), and [opt](http://www.decompile.com/not_invented_here/opt/), these libraries are either designed with different goals in mind, do far too much, or use weird or complicated syntax. This repository intends to make command line parsing as simple and easy as possible for the user and for the code itself to be easy to read and improve.
 
 Currently, this library is in the beta stage. While it is stable, there are a few improvements that could be made. I'll list these improvements in the section "Goals."
 
 While the source code itself is standard c++11, both Makefiles use the GNU/Linux tools make and g++ and the test program uses Linux symlinks, which may be invalid on Windows systems.
+
+## Why I Wrote This Library
+- Every non-trivial program has to parse command line arguments, which leaves programmers often writing their own parsers for each individual project even though they are often writing the same inefficient, rigid, and unnecessarily complex algorithms.
+- Current CLI parsers either do far too little, such as GetOpt, or far too much, such as CLI11. Programs should do one thing and do it well. This library takes the data in the command line and puts it into your variables.
+- I wanted to contribute to the open source community and familiarize myself with GitHub.
 
 ## Getting Started
 
@@ -128,6 +133,41 @@ int main(int argc, char ** argv){
 }
 ```
 
+### Extensibility to More Complex Command Line Arguments
+
+If you look at gcc's documentation, you'll find what looks like 2000 different options, but there are really only less than twenty. However, each argument takes multiple subarguments. In the vanilla application of this library, `-Wall -Wno-sign-compare` would set the `std::string` or `char *` that the flag `-W` refers to to `no-sign-compare` with no mention of `-Wall`. You can fix this issue by defining your own class or struct and overriding the template for a `Command_Line_Var` and writing your own version of `set_base_variable`. Below is the template specialization for `char` which allows it to act like a `char *`:
+
+```
+// parser.h
+template<>
+class Command_Line_Var<char> : public Command_Line_Var_Interface {
+private:
+        int buffer_size;
+public:
+        Command_Line_Var(void * b_v, std::vector<const char *> a, bool ta, int b_s);
+        virtual void set_base_variable(const char * b_v);
+};
+
+// parser.cpp
+Command_Line_Var<char>::Command_Line_Var(void * b_v, std::vector<const char *> a, bool ta, int b_s) : Command_Line_Var_Interface(b_v, a, ta), buffer_size(b_s) {}
+
+void Command_Line_Var<char>::set_base_variable(const char * b_v) {
+        char * base_variable_string = (char *)base_variable;
+        int i = 0;
+        while (b_v[i] != '\0' && i < buffer_size) {
+                base_variable_string[i] = b_v[i];
+                i++;
+        }
+        base_variable_string[i] = '\0';
+}
+```
+
+Note that:
+- The template specialization for `char` extends `public Command_Line_Var_Interface`.
+- It includes a new variable `buffer_size`, which prevents it from going beyond its buffer. Because it has more variables than a `Command_Line_Var_Interface`, it needs to define its own constructor. Normally, if you don't have extra variables or don't need to do anything besides setting variables in the constructor, you don't need to define a constructor.
+- `set_base_variable` is a virtual function takes in a `const char *` and returns `void`. This function must be implemented to make the template specialization behave differently.
+
+
 ## License
 This project is licensed under the MIT License - see the LICENSE.md file for details.
 
@@ -138,11 +178,11 @@ This project is licensed under the MIT License - see the LICENSE.md file for det
     1. Currently, the program will convert strings into 0 if the argument takes a numeric argument.
        For example, `--prob=test` will set prob to 0.0, because prob is a double.
     1. Other examples will come up whenever I encounter more errors.
+1. Add example of template class specialization.
 1. Verify that this code runs on Mac.
 1. Add a help message for the test program.
+1. Add some sort of configuration file for the program to use in the case of a large number of arguments.
 1. Clean up the test program, specifically by moving all the comments to better locations.
-1. ~~Add autogenerated help.~~
-    1. It's better for the programmer to write his or her own help message, as this library would have to make too many assumptions for what the user wants.
 1. Refine README
 1. Run more tests, specifically trying to simulate command line response in standard Linux tools.
     1. `wget` in particular looks perfect for this, with the notable exception of non-standard command-line arguments, such as -nc, which the library would treat as --nc.
