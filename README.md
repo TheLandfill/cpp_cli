@@ -3,7 +3,26 @@ This repository consists of a library designed to make parsing command line argu
 
 Currently, this library is in the beta stage. While it is stable, there are a few improvements that could be made. I'll list these improvements in the section "Goals."
 
-While the source code itself is standard c++11, both Makefiles use the GNU/Linux tools make and g++ and the test program uses Linux symlinks, which may be invalid on Windows systems.
+While the source code itself is standard c++11, both Makefiles use the GNU/Linux tools make and g++.
+
+## Table of Contents
+1. [Why I Wrote This Library](#why-i-wrote-this-library)
+1. [Getting Started](#getting-started)
+    1. [Prerequisites](#prerequisites)
+    1. [Install for Linux/Mac](#install-for-linux-or-mac)
+        1. [Make the Library](#make-the-library)
+        1. [Make the Test](#make-the-test)
+1. [How to Use](#how-to-use)
+    1. [Syntax of Use](#syntax-of-use)
+1. [Parsing Rules](#parsing-rules)
+    1. [Types the Library Can Handle](#types-the-library-can-handle)
+        1. [How to Handle a `char` Array](#how-to-handle-a-char-array)
+1. [Exception Throwing](#exception-throwing)
+1. [Example Usage](#example-usage)
+1. [Extensibility to More Complex Command Line Arguments](#extensibility-to-more-complex-command-line-arguments)
+1. [Goals](#goals)
+1. [Goals Completed](#goals-completed)
+1. [License](#license)
 
 ## Why I Wrote This Library
 - Every non-trivial program has to parse command line arguments, which leaves programmers often writing their own parsers for each individual project even though they are often writing the same inefficient, rigid, and unnecessarily complex algorithms.
@@ -19,7 +38,7 @@ The library requires nothing but c++11, but the test program itself needs the li
 
 To use this library in other projects, it must first be compiled (it comes with its own Makefile which uses g++) and linked to the program that wants to use it, then you can include the header file "parser.h" and use all the necessary functionality.
 
-### Install For Linux/Mac
+### Install For Linux or Mac
 #### Make the Library
 1. Download the source code.
 1. Move to the directory cpp_command_line_parser/bin/
@@ -29,7 +48,7 @@ To use this library in other projects, it must first be compiled (it comes with 
 1. Move to the directory test_cpp_command_line_parser/bin/
 1. Type "make".
 
-### How to Use
+## How to Use
 1. Link the library in the project settings or in the Makefile
 1. Include the header file "parser.h" in the main part of your program.
 1. Create a new scope (this is just so the local variables you need to create disappear).
@@ -38,13 +57,13 @@ To use this library in other projects, it must first be compiled (it comes with 
 1. All the variables will be set after hash finishes.
 1. Any non-flagged argument or subargument will be returned in a vector of "non_options" in the order in which they appear in the command line.
 
-#### Syntax of Use
+### Syntax of Use
 ```
 Command_Line_Var<T> variable_name_var(&variable_name, { "flag1", "flag2", "f" }, takes_args);
 ```
 where `T` is the type of the variable and `variable_name_var` is a stack allocated variable. The first argument is the address of the variable you want to set, the second variable is an array/vector of strings corresponding to flags that control the value of the variable, and the third argument is a bool that determines whether or not the flags take arguments themselves.
 
-### Parsing Rules
+## Parsing Rules
 [This answer](https://stackoverflow.com/a/14738273/6629221) on stackexchange does a good job of summarizing the standard for command line argument syntax, and the library follows these rules, which are copied below for convenience.
 > - Arguments are divided into options and non-options. Options start with a dash, non-options don't.
 > - Options, as the name implies, are supposed to be optional. If your program requires some command-line arguments to do anything at all useful, those arguments should be non-options (i.e. they should not start with a dash).
@@ -84,7 +103,7 @@ virtual void set_base_variable(const char * b_v) {
     *(T *)base_variable = b_v;
 }
 ```
-#### How to handle a `char *`
+#### How to Handle a `char` Array
 Instead of creating a `Command_Line_Var<char *>` with the address of the variable containing the char \*, you should create a `Command_Line_Var<char>` with the char \* as its first argument. It also has a fourth argument which sets the buffer size, and so it cannot have a segmentation fault so long as you have allocated more than the buffer size you provide.
 
 ```
@@ -99,10 +118,10 @@ Command_Line_Var<char> example_string_var(example_string, ..., ..., 20);
 
 Furthermore, you should allocate enough memory to store the longest argument you expect to receive. If you do not, you run the risk of a segmentation fault, and there is nothing the library can do to fix it or notify you that your buffer is too small.
 
-### Exception Throwing
+## Exception Throwing
 The library will throw exceptions (std::invalid_argument) when you provide a flag you did not specify (except for the single hyphen flag for standard input) or provide an argument to a flag that does not take arguments. When the library throws an argument, it will tell you the error and which flag caused the error. The exception will only print around the first 32 characters of the flag. It will also throw an exception (std::length_error) if you try to use more flags than the hash table can handle, which is around 5,000.
 
-### Example Usage
+## Example Usage
 ```
 #include "parser.h"
 
@@ -133,7 +152,7 @@ int main(int argc, char ** argv){
 }
 ```
 
-### Extensibility to More Complex Command Line Arguments
+## Extensibility to More Complex Command Line Arguments
 
 If you look at gcc's documentation, you'll find what looks like 2000 different options, but there are really only less than twenty. However, each argument takes multiple subarguments. In the vanilla application of this library, `-Wall -Wno-sign-compare` would set the `std::string` or `char *` that the flag `-W` refers to to `no-sign-compare` with no mention of `-Wall`. You can fix this issue by defining your own class or struct and overriding the template for a `Command_Line_Var` and writing your own version of `set_base_variable`. Below is the template specialization for `char` which allows it to act like a `char *`:
 
@@ -167,10 +186,6 @@ Note that:
 - It includes a new variable `buffer_size`, which prevents it from going beyond its buffer. Because it has more variables than a `Command_Line_Var_Interface`, it needs to define its own constructor. Normally, if you don't have extra variables or don't need to do anything besides setting variables in the constructor, you don't need to define a constructor.
 - `set_base_variable` is a virtual function takes in a `const char *` and returns `void`. This function must be implemented to make the template specialization behave differently.
 
-
-## License
-This project is licensed under the MIT License - see the LICENSE.md file for details.
-
 ## Goals
 1. Make Windows specific compilation.
     1. Either convert Makefiles to CMake or roll my own Project for Visual Studio.
@@ -178,7 +193,7 @@ This project is licensed under the MIT License - see the LICENSE.md file for det
     1. Currently, the program will convert strings into 0 if the argument takes a numeric argument.
        For example, `--prob=test` will set prob to 0.0, because prob is a double.
     1. Other examples will come up whenever I encounter more errors.
-1. Add example of template class specialization.
+1. Add example of template class specialization as specified in the section  in test program.
 1. Verify that this code runs on Mac.
 1. Add a help message for the test program.
 1. Add some sort of configuration file for the program to use in the case of a large number of arguments.
@@ -188,7 +203,7 @@ This project is licensed under the MIT License - see the LICENSE.md file for det
     1. `wget` in particular looks perfect for this, with the notable exception of non-standard command-line arguments, such as -nc, which the library would treat as --nc.
     1. It is not a good idea for me to try to implement all the flags for `gcc`, but I made sure that cpp_args_parser can handle up to 5000 aliases, which is more than enough for gcc (which has around 2000) to handle.
     
-### Goals Completed
+## Goals Completed
 1. Make sure that symlinks work on Windows.
 1. Fix response to nonexistant flags. Right now, it just crashes the program with a seg fault. I can either make it ignore them or treat them as non-options.
 1. Fix response to providing arguments to options that do not take arguments.
@@ -196,3 +211,6 @@ This project is licensed under the MIT License - see the LICENSE.md file for det
 1. Add support for repeated single flags, such as `-vvvv` meaning level four verboseness.
 1. Add helpful error messages for using invalid flags.
 1. Add helpful error messages for providing arguments to flags that do not take arguments.
+
+## License
+This project is licensed under the MIT License - see the LICENSE.md file for details.
