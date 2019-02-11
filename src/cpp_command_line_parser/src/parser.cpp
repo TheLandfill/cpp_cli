@@ -16,7 +16,7 @@ bool Command_Line_Var_Interface::takes_args() {
 }
 
 std::vector<const char *> hash_cmd_line_into_variables(int argc, char ** argv, size_t num_unique_flags) {
-	Hash_Table command_line_settings_map(num_unique_flags);
+	Hash_Table<Command_Line_Var_Interface> command_line_settings_map(num_unique_flags);
 	std::vector<const char *> non_options;
 	non_options.reserve(100);
 	for (size_t i = 0; i < list_of_cmd_var.size(); i++) {
