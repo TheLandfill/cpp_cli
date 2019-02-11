@@ -26,7 +26,7 @@ While the source code itself is standard c++11, both Makefiles use the GNU/Linux
 
 ## Why I Wrote This Library
 - Every non-trivial program has to parse command line arguments, which leaves programmers often writing their own parsers for each individual project even though they are often writing the same inefficient, rigid, and unnecessarily complex algorithms.
-- Current CLI parsers either do far too little, such as GetOpt, or far too much, such as CLI11. Programs should do one thing and do it well. This library takes the data in the command line and puts it into your variables.
+- In my opinion, current CLI parsers either do far too little, such as GetOpt, or far too much, such as CLI11. Programs should do one thing and do it well. This library takes the data in the command line and puts it into your variables.
 - I wanted to contribute to the open source community and familiarize myself with GitHub.
 
 ## Getting Started
@@ -187,16 +187,18 @@ Note that:
 - `set_base_variable` is a virtual function takes in a `const char *` and returns `void`. This function must be implemented to make the template specialization behave differently.
 
 ## Goals
+1. Convert the library into a single header file.
+    1. Doing so would solve the issue of Windows specific compilation, as it would automatically be taken care of by the compiler.
+    1. Due to the nature of the algorithm, it has a one time use so it should only be included once, meaning the hit from making the functions inline shouldn't be any worse than just having the library.
 1. Make Windows specific compilation.
     1. Either convert Makefiles to CMake or roll my own Project for Visual Studio.
 1. Add helpful error messages.
     1. Currently, the program will convert strings into 0 if the argument takes a numeric argument.
        For example, `--prob=test` will set prob to 0.0, because prob is a double.
     1. Other examples will come up whenever I encounter more errors.
-1. Add example of template class specialization as specified in the section  in test program.
+1. Add example of template class specialization as specified in the section in test program.
 1. Verify that this code runs on Mac.
 1. Add a help message for the test program.
-1. Add some sort of configuration file for the program to use in the case of a large number of arguments.
 1. Clean up the test program, specifically by moving all the comments to better locations.
 1. Refine README
 1. Run more tests, specifically trying to simulate command line response in standard Linux tools.
