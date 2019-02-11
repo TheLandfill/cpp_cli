@@ -190,6 +190,7 @@ Note that:
 1. Convert the library into a single header file.
     1. Doing so would solve the issue of Windows specific compilation, as it would automatically be taken care of by the compiler.
     1. Due to the nature of the algorithm, it has a one time use so it should only be included once, meaning the hit from making the functions inline shouldn't be any worse than just having the library.
+    1. It makes the algorithm easier for the user to include and use.
 1. Make Windows specific compilation.
     1. Either convert Makefiles to CMake or roll my own Project for Visual Studio.
 1. Add helpful error messages.
