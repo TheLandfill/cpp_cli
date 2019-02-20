@@ -1,58 +1,24 @@
 #ifndef CPP_CMD_LINE_PARSER_H
 #define CPP_CMD_LINE_PARSER_H
+#include "args_parser_templates.h"
 #include "hash_table.h"
-#include <cstddef>
 #include <cstdlib>
 #include <stdexcept>
 #include <vector>
 
-class Command_Line_Var_Interface;
-
 class ARGS_PARSER {
 friend class Command_Line_Var_Interface;
 private:
-	static int count;
 	static std::vector<Command_Line_Var_Interface *> list_of_cmd_var;
 public:
 	static std::vector<const char *> parse(int argc, char ** argv, size_t num_unique_flags = 1000);
-};
-
-int ARGS_PARSER::count = 0;
-std::vector<Command_Line_Var_Interface *> ARGS_PARSER::list_of_cmd_var = std::vector<Command_Line_Var_Interface *>();
-
-class Command_Line_Var_Interface {
-protected:
-	bool takes_args_var;
-	void * base_variable;
-	std::vector<const char *> aliases;
-public:
-	Command_Line_Var_Interface(void * b_v, std::vector<const char *> a, bool ta);
-	const std::vector<const char *>& get_aliases() const;
-	bool takes_args() const;
-	virtual void set_base_variable(const char * b_v) = 0;
-};
-
-template<typename T>
-class Command_Line_Var : public Command_Line_Var_Interface {
-public:
-	Command_Line_Var(T * b_v, std::vector<const char *> a, bool ta);
-	virtual void set_base_variable(const char * b_v);
-};
-
-template<>
-class Command_Line_Var<char> : public Command_Line_Var_Interface {
-private:
-	int buffer_size;
-public:
-	Command_Line_Var(void * b_v, std::vector<const char *> a, bool ta, int b_s);
-	virtual void set_base_variable(const char * b_v);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 //////////////////////////////INLINE DECLARATIONS//////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-std::vector<const char *> ARGS_PARSER::parse(int argc, char ** argv, size_t num_unique_flags) {
+inline std::vector<const char *> ARGS_PARSER::parse(int argc, char ** argv, size_t num_unique_flags) {
 	Hash_Table<Command_Line_Var_Interface> command_line_settings_map(num_unique_flags);
 	std::vector<const char *> non_options;
 	non_options.reserve(100);
@@ -181,11 +147,11 @@ inline Command_Line_Var_Interface::Command_Line_Var_Interface(void * b_v, std::v
 	ARGS_PARSER::list_of_cmd_var.push_back(this);
 }
 
-const std::vector<const char *>& Command_Line_Var_Interface::get_aliases() const {
+inline const std::vector<const char *>& Command_Line_Var_Interface::get_aliases() const {
 	return aliases;
 }
 
-bool Command_Line_Var_Interface::takes_args() const {
+inline bool Command_Line_Var_Interface::takes_args() const {
 	return takes_args_var;
 }
 
@@ -257,4 +223,7 @@ template<>
 inline void Command_Line_Var<long double>::set_base_variable(const char * b_v) {
 	*(long double *)base_variable = strtold(b_v, nullptr);
 }
+
+std::vector<Command_Line_Var_Interface *> ARGS_PARSER::list_of_cmd_var = std::vector<Command_Line_Var_Interface *>();
+
 #endif
