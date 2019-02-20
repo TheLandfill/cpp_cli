@@ -1,6 +1,7 @@
 PRODUCT := CMD_PARSER_TEST
 BINDIR  := .
 INCDIR  := ../includes
+INCDIR_EXT := ../external_includes
 LIBDIR	:= ../libs
 SRCDIR  := ../src
 OBJDIR  := ../obj
@@ -9,7 +10,7 @@ MKDIR_P = mkdir -p
 
 CXX := g++
 LINKER := g++
-INCLUDES := -I$(INCDIR)
+INCLUDES := -I$(INCDIR) -I$(INCDIR_EXT)
 LIBRARIES := -L$(LIBDIR)
 CXXFLAGS := -O3 -Wall -Wextra -std=c++11 -MMD -MP
 

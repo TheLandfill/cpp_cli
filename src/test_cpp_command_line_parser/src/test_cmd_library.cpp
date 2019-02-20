@@ -1,4 +1,4 @@
-#include "../includes/parser.h"
+#include "parser.h"
 #include <iostream>
 #include <vector>
 #include <string>
@@ -82,7 +82,7 @@ int main(int argc, char ** argv) {
 
 		// Non options must be declared outside the scope unless you don't
 		// need to use them.
-		non_options = hash_cmd_line_into_variables(argc, argv);
+		non_options = ARGS_PARSER::parse(argc, argv);
 	}
 
 	// This section just prints out the values to demonstrate that hash worked.
