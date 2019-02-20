@@ -122,6 +122,7 @@ int main(int argc, char ** argv){
   std::string show_output = "";
   std::string standard_input = "";
   char c_version_of_string[20];
+  std::vector<const char *> non_options;
 
   {
     // Both filename and recursion_level take args, so their third argument is true
@@ -136,10 +137,10 @@ int main(int argc, char ** argv){
     
     // A char * has type char in the template and doesn't take the address of the variable.
     Command_Line_Var<char> c_version_of_string_var(c_version_of_string, { "v" }, false, 20);
-    hash(argc, argv);
+    non_options = ARGS_PARSER::parse(argc, argv);
   }
   
-  // Other code. At this point, filename, recursion_level, and show_output are set.
+  // Other code. At this point, all variables are set.
 }
 ```
 
@@ -178,6 +179,8 @@ Note that:
 - `set_base_variable` is a virtual function takes in a `const char *` and returns `void`. This function must be implemented to make the template specialization behave differently.
 
 ## Goals
+1. Add way to allow user to automatically move flags to non-options by default.
+    1. This is most important when dealing with flags that need to be in order, like gcc's -l library flag.
 1. Make Windows specific compilation.
     1. Either convert Makefiles to CMake or roll my own Project for Visual Studio.
 1. Add helpful error messages.
@@ -191,7 +194,7 @@ Note that:
 1. Refine README
 1. Run more tests, specifically trying to simulate command line response in standard Linux tools.
     1. `wget` in particular looks perfect for this, with the notable exception of non-standard command-line arguments, such as -nc, which the library would treat as --nc.
-    1. It is not a good idea for me to try to implement all the flags for `gcc`, but I made sure that cpp_args_parser can handle up to 5000 aliases, which is more than enough for gcc (which has around 2000) to handle.
+    1. It is not a good idea for me to try to implement all the flags for `gcc`, but it does have a more complex parsing algorithm I could try to simulate at least part of.
     
 ## Goals Completed
 1. Convert library to a single file for the user to include.
