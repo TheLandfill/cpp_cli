@@ -35,7 +35,7 @@ As it currently stands, the header file will work on all systems, but the test p
 The library requires nothing but c++11. The test program already has symlinks to the required library and header file.
 
 ### Install
-No installation required. Just download the [folder containing the header files "parser.h" and "hash_table.h"](src/cpp_command_line_parser/includes) and add it to your list of include directories.
+No installation required. Just download the [folder](src/cpp_command_line_parser/) containing the header files "parser.h", "hash_table.h", and "args_parser_templates.h" and add it to your list of include directories.
 
 ## How to Use
 1. Add the include directory in the project settings or in the Makefile
