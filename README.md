@@ -3,15 +3,13 @@ This repository consists of a library designed to make parsing command line argu
 
 Currently, this library is in the beta stage. While it is stable, there are a few improvements that could be made. I'll list these improvements in the section "Goals."
 
-While the source code itself is standard c++11, both Makefiles use the GNU/Linux tools make and g++.
+While the source code itself is standard c++11, the test program's Makefile uses the GNU/Linux tools make and g++.
 
 ## Table of Contents
 1. [Why I Wrote This Library](#why-i-wrote-this-library)
 1. [Getting Started](#getting-started)
     1. [Prerequisites](#prerequisites)
-    1. [Install for Linux/Mac](#install-for-linux-or-mac)
-        1. [Make the Library](#make-the-library)
-        1. [Make the Test](#make-the-test)
+    1. [Install](#install)
 1. [How to Use](#how-to-use)
     1. [Syntax of Use](#syntax-of-use)
 1. [Parsing Rules](#parsing-rules)
@@ -31,29 +29,20 @@ While the source code itself is standard c++11, both Makefiles use the GNU/Linux
 
 ## Getting Started
 
-As it currently stands, this repository will not work on Windows systems as it relies on GNU/Linux tools to compile.
+As it currently stands, the header file will work on all systems, but the test program will have to be compiled using Windows.
 
 ### Prerequisites
-The library requires nothing but c++11, but the test program itself needs the library to be compiled first. The test program already has symlinks to the required library and header file.
+The library requires nothing but c++11. The test program already has symlinks to the required library and header file.
 
-To use this library in other projects, it must first be compiled (it comes with its own Makefile which uses g++) and linked to the program that wants to use it, then you can include the header file "parser.h" and use all the necessary functionality.
-
-### Install For Linux or Mac
-#### Make the Library
-1. Download the source code.
-1. Move to the directory cpp_command_line_parser/bin/
-1. Type "make".
-#### Make the Test
-1. Make the library first.
-1. Move to the directory test_cpp_command_line_parser/bin/
-1. Type "make".
+### Install
+No installation required. Just download the [folder containing the header files "parser.h" and "hash_table.h"](src/cpp_command_line_parser/includes) and add it to your list of include directories.
 
 ## How to Use
-1. Link the library in the project settings or in the Makefile
+1. Add the include directory in the project settings or in the Makefile
 1. Include the header file "parser.h" in the main part of your program.
 1. Create a new scope (this is just so the local variables you need to create disappear).
 1. Inside that scope, create a `Command_Line_Var<T>` (syntax specified below).
-1. Once you've created all the `Command_Line_Var`s, run the function `hash(argc, argv);`.
+1. Once you've created all the `Command_Line_Var`s, run the function `ARGS_PARSER::parse(argc, argv);`.
 1. All the variables will be set after hash finishes.
 1. Any non-flagged argument or subargument will be returned in a vector of "non_options" in the order in which they appear in the command line.
 
@@ -114,12 +103,14 @@ Command_Line_Var<char *> example_string_var(&example_string, ..., ..., 20);
 Command_Line_Var<char> example_string_var(example_string, ..., ..., 200);
 // VALID
 Command_Line_Var<char> example_string_var(example_string, ..., ..., 20);
+// VALID
+Command_Line_Var<char> example_string_var(example_string, ..., ..., 10);
 ```
 
 Furthermore, you should allocate enough memory to store the longest argument you expect to receive. If you do not, you run the risk of a segmentation fault, and there is nothing the library can do to fix it or notify you that your buffer is too small.
 
 ## Exception Throwing
-The library will throw exceptions (std::invalid_argument) when you provide a flag you did not specify (except for the single hyphen flag for standard input) or provide an argument to a flag that does not take arguments. When the library throws an argument, it will tell you the error and which flag caused the error. The exception will only print around the first 32 characters of the flag. It will also throw an exception (std::length_error) if you try to use more flags than the hash table can handle, which is around 5,000.
+The library will throw exceptions (std::invalid_argument) when you provide a flag you did not specify (except for the single hyphen flag for standard input) or provide an argument to a flag that does not take arguments. When the library throws an argument, it will tell you the error and which flag caused the error. The exception will only print around the first 32 characters of the flag that caused the error.
 
 ## Example Usage
 ```
@@ -144,7 +135,7 @@ int main(int argc, char ** argv){
     Command_Line_Var<std::string> standard_input_var(&standard_input, { "-" }, false);
     
     // A char * has type char in the template and doesn't take the address of the variable.
-    Command_Line_Var<char> c_version_of_string_var(c_version_of_string, { "v" }, false);
+    Command_Line_Var<char> c_version_of_string_var(c_version_of_string, { "v" }, false, 20);
     hash(argc, argv);
   }
   
@@ -187,10 +178,6 @@ Note that:
 - `set_base_variable` is a virtual function takes in a `const char *` and returns `void`. This function must be implemented to make the template specialization behave differently.
 
 ## Goals
-1. Convert the library into a single header file.
-    1. Doing so would solve the issue of Windows specific compilation, as it would automatically be taken care of by the compiler.
-    1. Due to the nature of the algorithm, it has a one time use so it should only be included once, meaning the hit from making the functions inline shouldn't be any worse than just having the library.
-    1. It makes the algorithm easier for the user to include and use.
 1. Make Windows specific compilation.
     1. Either convert Makefiles to CMake or roll my own Project for Visual Studio.
 1. Add helpful error messages.
@@ -207,6 +194,10 @@ Note that:
     1. It is not a good idea for me to try to implement all the flags for `gcc`, but I made sure that cpp_args_parser can handle up to 5000 aliases, which is more than enough for gcc (which has around 2000) to handle.
     
 ## Goals Completed
+1. Convert library to a single file for the user to include.
+    1. Doing so would solve the issue of Windows specific compilation, as it would automatically be taken care of by the compiler.
+    1. Due to the nature of the algorithm, it has a one time use so it should only be included once, meaning the hit from making the functions inline shouldn't be any worse than just having the library.
+    1. It makes the algorithm easier for the user to include and use.
 1. Make sure that symlinks work on Windows.
 1. Fix response to nonexistant flags. Right now, it just crashes the program with a seg fault. I can either make it ignore them or treat them as non-options.
 1. Fix response to providing arguments to options that do not take arguments.
