@@ -192,6 +192,11 @@ inline void ARGS_PARSER::multiple_short_options_handling(int argc, char ** argv,
 			error_message[21] = argv[i][1];
 			throw std::invalid_argument(error_message);
 		}
+		if (command_line_settings_map[temp_alias]->ignored()) {
+			char error_message[] = "Order of \"-\0\" matters, so it cannot be part of multiple short arguments.";
+			error_message[11] = flag[i];
+			throw std::invalid_argument(error_message);
+		}
 		if (command_line_settings_map[temp_alias]->takes_args()) {
 			if (flag[i + 1] != '\0' || cur_argument + 1 >= argc) {
 				char error_message[] = "Option requires arguments: \0";
