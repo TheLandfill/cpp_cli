@@ -80,6 +80,14 @@ int main(int argc, char ** argv) {
 		// Unless you do something with it, the hyphen will be ignored.
 		Command_Line_Var<std::string> standard_input_hyphen_var(&standard_input_hyphen, { "-" }, false);
 
+		// This will put any argument starting with "-l" or "--library" into
+		// non_options, even though it's still an option, as its order matters.
+		// The type doesn't matter as you're not setting a variable. You will
+		// have to take template specializations into account, such as char.
+		// You should also set takes_args to be true, or else its position does
+		// not matter.
+		Command_Line_Var<int> ignored_flag_var(nullptr, { "l", "library" }, true);
+
 		// Non options must be declared outside the scope unless you don't
 		// need to use them.
 		non_options = ARGS_PARSER::parse(argc, argv);

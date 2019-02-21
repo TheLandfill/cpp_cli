@@ -9,7 +9,17 @@
 class ARGS_PARSER {
 friend class Command_Line_Var_Interface;
 private:
+	static Hash_Table<Command_Line_Var_Interface> command_line_settings_map;
 	static std::vector<Command_Line_Var_Interface *> list_of_cmd_var;
+	static std::vector<const char *> non_options;
+private:
+	static void fill_hash_table(size_t num_unique_flags);
+	static void long_option_handling(char ** argv, int& i);
+	static int find_and_mark_split_location(char * flag);
+	static void invalid_use_exception_throwing(char * error_message_buffer, const int buffer_size, const int start_of_available_section, const char * offending_flag);
+
+	static void short_option_handling(int argc, char ** argv, int& i);
+	static void multiple_short_options_handling(int argc, char ** argv, int& cur_argument);
 public:
 	static std::vector<const char *> parse(int argc, char ** argv, size_t num_unique_flags = 1000);
 };
@@ -19,55 +29,13 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 inline std::vector<const char *> ARGS_PARSER::parse(int argc, char ** argv, size_t num_unique_flags) {
-	Hash_Table<Command_Line_Var_Interface> command_line_settings_map(num_unique_flags);
-	std::vector<const char *> non_options;
+	fill_hash_table(num_unique_flags);
 	non_options.reserve(100);
-	for (size_t i = 0; i < ARGS_PARSER::list_of_cmd_var.size(); i++) {
-		Command_Line_Var_Interface * cur_com_var = ARGS_PARSER::list_of_cmd_var[i];
-		const std::vector<const char *> & cur_aliases = cur_com_var->get_aliases();
-		for (size_t j = 0; j < cur_aliases.size(); j++) {
-			command_line_settings_map.insert(cur_aliases[j], cur_com_var);
-		}
-	}
 	int i = 1;
 	for (; i < argc; i++) {
 		// cases: --long-option
 		if (argv[i][2] != '\0' && argv[i][1] == '-' && argv[i][0] == '-') {
-			char * temp_alias = argv[i] + 2;
-			int split_location = 0;
-			for (; temp_alias[split_location] != '\0'; split_location++) {
-				if (temp_alias[split_location] == '=') {
-					temp_alias[split_location] = '\0';
-					split_location++;
-					break;
-				}
-			}
-			if (command_line_settings_map.count(temp_alias) == 0) {
-				char error_message[54] = "Unrecognized Option: \0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
-				int error_message_iterator = 21;
-				while (error_message_iterator < 53 && temp_alias[error_message_iterator - 21] != '\0') {
-					error_message[error_message_iterator] = temp_alias[error_message_iterator - 21];
-					error_message_iterator++;
-				}
-				throw std::invalid_argument(error_message);
-			}
-			// case: --long-option=value
-			if (temp_alias[split_location] != '\0') {
-				if (command_line_settings_map[temp_alias]->takes_args()) {
-					command_line_settings_map[temp_alias]->set_base_variable(temp_alias + split_location);
-				} else {
-					char error_message[] = "Option does not take arguments: \0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
-					int error_message_iterator = 32;
-					while (error_message_iterator < 64 && temp_alias[error_message_iterator - 32] != '\0') {
-						error_message[error_message_iterator] = temp_alias[error_message_iterator - 32];
-						error_message_iterator++;
-					}
-					throw std::invalid_argument(error_message);
-				}
-			// case: --long-option
-			} else {
-				command_line_settings_map[temp_alias]->set_base_variable(temp_alias);
-			}
+			long_option_handling(argv, i);
 		// case: -- and all arguments are options
 		} else if (argv[i][0] == '-' && argv[i][1] == '-' && argv[i][2] == '\0') {
 			i++;
@@ -78,58 +46,7 @@ inline std::vector<const char *> ARGS_PARSER::parse(int argc, char ** argv, size
 				command_line_settings_map["-"]->set_base_variable("-");
 			}
 		} else if (argv[i][0] == '-') {
-			int j = 1;
-			char temp_alias[2] = "\0";
-			temp_alias[0] = argv[i][1];
-			if (command_line_settings_map.count(temp_alias) == 0) {
-				char error_message[21 + 2] = "Unrecognized Option: \0";
-				error_message[21] = argv[i][1];
-				throw std::invalid_argument(error_message);
-			}
-			// case: -o value
-			if (argv[i][2] == '\0' && i + 1 < argc && command_line_settings_map.count(argv[i] + 1) != 0 && command_line_settings_map[argv[i] + 1]->takes_args()) {
-				command_line_settings_map[argv[i] + 1]->set_base_variable(argv[i + 1]);
-				i++;
-				continue;
-			}
-			// case: -oValue
-			bool multiple_short_arguments = true;
-			for (int k = j; argv[i][k] != '\0'; k++) {
-				char temp_string[2] = "\0";
-				temp_string[0] = argv[i][k];
-				if (command_line_settings_map.count(temp_string) == 0) {
-					temp_alias[0] = argv[i][j];
-					if (command_line_settings_map[temp_alias]->takes_args()) {
-						command_line_settings_map[temp_alias]->set_base_variable(argv[i] + 2);
-					} else {
-						char error_message[] = "Option does not take arguments: \0";
-						error_message[32] = argv[i][1];
-						throw std::invalid_argument(error_message);
-					}
-					multiple_short_arguments = false;
-					break;
-				}
-			}
-
-			// case -vvv
-			char temp_repetition[12] = "\0\0\0\0\0\0\0\0\0\0\0";
-			bool repeated_short_arguments = false;
-			while (multiple_short_arguments && argv[i][j] != '\0' && argv[i][j] == argv[i][1] && j < 12) {
-				repeated_short_arguments = true;
-				temp_repetition[j - 1] = argv[i][j];
-				j++;
-			}
-			if (repeated_short_arguments) {
-				temp_alias[0] = temp_repetition[0];
-				command_line_settings_map[temp_alias]->set_base_variable(temp_repetition);
-			}
-				
-			// case -abc
-			while (multiple_short_arguments && argv[i][j] != '\0') {
-				temp_alias[0] = argv[i][j];
-				command_line_settings_map[temp_alias]->set_base_variable(temp_alias);
-				j++;
-			}
+			short_option_handling(argc, argv, i);
 		} else {
 			non_options.push_back(argv[i]);
 		}
@@ -140,6 +57,158 @@ inline std::vector<const char *> ARGS_PARSER::parse(int argc, char ** argv, size
 	ARGS_PARSER::list_of_cmd_var.clear();
 	return non_options;
 }
+
+inline void ARGS_PARSER::fill_hash_table(size_t num_unique_flags) {
+	command_line_settings_map = Hash_Table<Command_Line_Var_Interface>(num_unique_flags);
+	for (size_t i = 0; i < ARGS_PARSER::list_of_cmd_var.size(); i++) {
+		Command_Line_Var_Interface * cur_com_var = list_of_cmd_var[i];
+		const std::vector<const char *> & cur_aliases = cur_com_var->get_aliases();
+		for (size_t j = 0; j < cur_aliases.size(); j++) {
+			command_line_settings_map.insert(cur_aliases[j], cur_com_var);
+		}
+	}
+}
+
+inline int ARGS_PARSER::find_and_mark_split_location(char * flag) {
+	int split_location = 0;
+	for (; flag[split_location] != '\0'; split_location++) {
+		if (flag[split_location] == '=') {
+			flag[split_location] = '\0';
+			split_location++;
+			break;
+		}
+	}
+	return split_location;
+}
+
+inline void ARGS_PARSER::invalid_use_exception_throwing(char * error_message_buffer, const int buffer_size, const int start_of_available_section, const char * offending_flag) {
+	int error_message_iterator = start_of_available_section;
+	while (error_message_iterator < buffer_size - 1 && offending_flag[error_message_iterator - start_of_available_section] != '\0') {
+		error_message_buffer[error_message_iterator] = offending_flag[error_message_iterator - start_of_available_section];
+		error_message_iterator++;
+	}
+	throw std::invalid_argument(error_message_buffer);
+}
+
+inline void ARGS_PARSER::long_option_handling(char ** argv, int& i) {
+	char * temp_alias = argv[i] + 2;
+	int split_location = find_and_mark_split_location(temp_alias);
+
+	if (command_line_settings_map.count(temp_alias) == 0) {
+		const int buffer_size = 54;
+		const int start_of_available_section = 21;
+		char error_message[buffer_size] = "Unrecognized Option: \0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
+		invalid_use_exception_throwing(error_message, buffer_size, start_of_available_section, temp_alias);
+	}
+
+	if (command_line_settings_map[temp_alias]->ignored()) {
+		if (command_line_settings_map[temp_alias]->takes_args()) {
+			temp_alias[split_location - 1] = '=';
+		}
+		non_options.push_back(argv[i]);
+		return;
+	}
+
+	// case: --long-option=value
+	if (temp_alias[split_location] != '\0') {
+		if (command_line_settings_map[temp_alias]->takes_args()) {
+			command_line_settings_map[temp_alias]->set_base_variable(temp_alias + split_location);
+		} else {
+			const int buffer_size = 65;
+			const int start_of_available_section = 32;
+			char error_message[buffer_size] = "Option does not take arguments: \0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
+			invalid_use_exception_throwing(error_message, buffer_size, start_of_available_section, temp_alias);
+		}
+	// case: --long-option
+	} else if (command_line_settings_map[temp_alias]->takes_args()) {
+		const int buffer_size = 60;
+		const int start_of_available_section = 27;
+		char error_message[buffer_size] = "Option requires arguments: \0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
+		invalid_use_exception_throwing(error_message, buffer_size, start_of_available_section, temp_alias);
+	} else {
+		command_line_settings_map[temp_alias]->set_base_variable(temp_alias);
+	}
+}
+
+inline void ARGS_PARSER::short_option_handling(int argc, char ** argv, int& i) {
+	char temp_alias[2] = "\0";
+	temp_alias[0] = argv[i][1];
+	if (command_line_settings_map.count(temp_alias) == 0) {
+		char error_message[] = "Unrecognized Option: \0";
+		error_message[21] = argv[i][1];
+		throw std::invalid_argument(error_message);
+	}
+
+	if (command_line_settings_map[temp_alias]->ignored()) {
+		non_options.push_back(argv[i]);
+		return;
+	}
+	// case: -o value
+	if (argv[i][2] == '\0' && i + 1 < argc && command_line_settings_map.count(argv[i] + 1) != 0 && command_line_settings_map[argv[i] + 1]->takes_args()) {
+		command_line_settings_map[argv[i] + 1]->set_base_variable(argv[i + 1]);
+		i++;
+		return;
+	}
+
+	// case: -oValue
+	if (command_line_settings_map[temp_alias]->takes_args()) {
+		command_line_settings_map[temp_alias]->set_base_variable(argv[i] + 2);
+		return;
+	}
+
+	// case: -abc or -vvv
+	multiple_short_options_handling(argc, argv, i);
+}
+
+inline void ARGS_PARSER::multiple_short_options_handling(int argc, char ** argv, int& cur_argument) {
+	int i = 0;
+	char * flag = argv[cur_argument] + 1;
+	char temp_alias[2] = "\0";
+
+	// case -vvv
+	const int repetition_buffer_size = 32;
+	char temp_repetition[repetition_buffer_size] = "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
+	bool repeated_short_arguments = false;
+	while (flag[i] != '\0' && flag[i] == flag[0] && i < repetition_buffer_size - 1) {
+		repeated_short_arguments = true;
+		temp_repetition[i] = flag[i];
+		i++;
+	}
+
+	while (flag[i] != '\0' && flag[i] == flag[0]) {
+		i++;
+	}
+
+	if (repeated_short_arguments) {
+		temp_alias[0] = temp_repetition[0];
+		command_line_settings_map[temp_alias]->set_base_variable(temp_repetition);
+	}
+		
+	// case -abc
+	while (flag[i] != '\0') {
+		temp_alias[0] = flag[i];
+		if (command_line_settings_map.count(temp_alias) == 0) {
+			char error_message[] = "Unrecognized Option: \0";
+			error_message[21] = argv[i][1];
+			throw std::invalid_argument(error_message);
+		}
+		if (command_line_settings_map[temp_alias]->takes_args()) {
+			if (flag[i + 1] != '\0' || cur_argument + 1 >= argc) {
+				char error_message[] = "Option requires arguments: \0";
+				error_message[27] = flag[i];
+				throw std::invalid_argument(error_message);
+			} else {
+				cur_argument++;
+				command_line_settings_map[temp_alias]->set_base_variable(argv[cur_argument]);
+				break;
+			}
+		} else {
+			command_line_settings_map[temp_alias]->set_base_variable(temp_alias);
+		}
+		i++;
+	}
+}
+
 
 /////////////////////Command_Line_Var_Interface Definitions////////////////////
 
@@ -153,6 +222,10 @@ inline const std::vector<const char *>& Command_Line_Var_Interface::get_aliases(
 
 inline bool Command_Line_Var_Interface::takes_args() const {
 	return takes_args_var;
+}
+
+inline bool Command_Line_Var_Interface::ignored() const {
+	return base_variable == nullptr;
 }
 
 //////////////////////////Command_Line_Var Definitions/////////////////////////
@@ -225,5 +298,7 @@ inline void Command_Line_Var<long double>::set_base_variable(const char * b_v) {
 }
 
 std::vector<Command_Line_Var_Interface *> ARGS_PARSER::list_of_cmd_var = std::vector<Command_Line_Var_Interface *>();
+Hash_Table<Command_Line_Var_Interface> ARGS_PARSER::command_line_settings_map = Hash_Table<Command_Line_Var_Interface>(1000);
+std::vector<const char *> ARGS_PARSER::non_options = std::vector<const char *>();
 
 #endif

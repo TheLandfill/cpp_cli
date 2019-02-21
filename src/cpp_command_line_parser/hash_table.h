@@ -21,7 +21,7 @@ struct Hash_Table_Registration {
 template<typename T>
 class Hash_Table {
 private:
-	const size_t hash_multiple = 31;
+	static const size_t hash_multiple = 31;
 	std::vector<Hash_Table_Registration<T>> registry_list;
 	size_t num_elements = 0;
 	double load_factor = 0.7;

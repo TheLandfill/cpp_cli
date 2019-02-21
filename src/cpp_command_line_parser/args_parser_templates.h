@@ -11,6 +11,7 @@ public:
 	Command_Line_Var_Interface(void * b_v, std::vector<const char *> a, bool ta);
 	const std::vector<const char *>& get_aliases() const;
 	bool takes_args() const;
+	bool ignored() const;
 	virtual void set_base_variable(const char * b_v) = 0;
 };
 
