@@ -111,17 +111,17 @@ Command_Line_Var<char> example_string_var(example_string, ..., ..., 10);
 
 Furthermore, you should allocate enough memory to store the longest argument you expect to receive. If you do not, you run the risk of a segmentation fault, and there is nothing the library can do to fix it or notify you that your buffer is too small.
 
-### Using Order Specific Options
+### Using Options Whose Locations Matter
 Without going into too much detail, the `-l` flag in `gcc` and `g++` has to come after other arguments in gcc, but my library destroys the order of options in most cases. To keep a flag in the list of non-options, provide `nullptr` for the first argument in the Command_Line_Var constructor where the address of a variable would normally go. For example:
 ```
 Command_Line_Var<int> example_ignored_variable(nullptr, { "l", "library"}, true);
 ```
-Any flag that starts with `-l` or `--library` will be considered as if it were a non-option. Note that the templated type was an int, but the type doesn't matter. If you wanted to do a `char`, you would have to provide a fourth argument that would not be used. If you set the third argument to false, it will convert `--library=something` to `--library\0something`, where `\0` is the null terminator.
+Any flag that starts with `-l` or `--library` will be considered as if it were a non-option. Note that the templated type was an int in this example, but the type doesn't matter. If you wanted to do a `char`, you would have to provide a fourth argument that would not be used. If you set the third argument to false, it will convert `--library=something` to `--library\0something`, where `\0` is the null terminator, but nothing else will happen.
 
-Furthermore, as it currently stands, having a `-l` in a group of multiple short arguments such as `-albc` will lead to a segmentation fault. If the order matters, then it should not be inside a group of multiple short arguments, period. However, I intend to fix the program so it throws an exception instead.
+Having a `-l` in a group of multiple short arguments such as `-albc` will throw an exception identifying the flag.
 
 ## Exception Throwing
-The library will throw exceptions (std::invalid_argument) when you provide a flag on the command line that you did not specify (except for the single hyphen flag for standard input) or provide an argument to a flag that does not take arguments. When the library throws an argument, it will tell you the error and which flag caused the error. The exception will only print around the first 32 characters of the flag that caused the error.
+The library will throw exceptions (std::invalid_argument) when you provide a flag on the command line that you did not specify (except for the single hyphen flag for standard input), provide an argument to a flag that does not take arguments, leave out an argument to a flag that does take arguments, or try to use a short option whose location on the command line matters inside a group of short options. When the library throws an argument, it will tell you the error and which flag caused the error. The exception will only print around the first 32 characters of the flag that caused the error.
 
 ## Example Usage
 ```
@@ -190,23 +190,23 @@ Note that:
 - `set_base_variable` is a virtual function takes in a `const char *` and returns `void`. This function must be implemented to make the template specialization behave differently.
 
 ## Goals
-1. Fix segmentation fault from having ignored flag in list of flags.
+1. Add subcommands, which are things like `git commit`, where `git` is the main program and `commit` is a subcommand.
+1. Add example of template class specialization as specified in the section in test program.
 1. Make Windows specific compilation.
     1. Either convert Makefiles to CMake or roll my own Project for Visual Studio.
 1. Add helpful error messages.
     1. Currently, the program will convert strings into 0 if the argument takes a numeric argument.
        For example, `--prob=test` will set prob to 0.0, because prob is a double.
     1. Other examples will come up whenever I encounter more errors.
-1. Add example of template class specialization as specified in the section in test program.
 1. Verify that this code runs on Mac.
 1. Add a help message for the test program.
 1. Clean up the test program, specifically by moving all the comments to better locations.
-1. Refine README
 1. Run more tests, specifically trying to simulate command line response in standard Linux tools.
     1. `wget` in particular looks perfect for this, with the notable exception of non-standard command-line arguments, such as -nc, which the library would treat as --nc.
     1. It is not a good idea for me to try to implement all the flags for `gcc`, but it does have a more complex parsing algorithm I could try to simulate at least part of.
     
 ## Goals Completed
+1. Fix segmentation fault from having ignored flag in list of flags.
 1. Add way to allow user to automatically move flags to non-options by default.
     1. This is most important when dealing with flags that need to be in order, like gcc's -l library flag.
 1. Convert library to a single file for the user to include.
