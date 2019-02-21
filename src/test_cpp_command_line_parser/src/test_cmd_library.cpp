@@ -68,8 +68,8 @@ int main(int argc, char ** argv) {
 
 		Command_Line_Var<std::string> file_var(&filename, { "f", "file", "filename" }, true);
 		Command_Line_Var<int> recursion_var(&recursion_level, { "r", "recursion", "max-depth" }, true);
-		Command_Line_Var<std::string> flag_var(&flag, { "flag", "l" }, false);
-		Command_Line_Var<std::string> flag2_var(&flag2, { "flag2", "a" }, false);
+		Command_Line_Var<std::string> flag_var(&flag, { "flag", "a" }, false);
+		Command_Line_Var<std::string> flag2_var(&flag2, { "flag2", "b" }, false);
 		Command_Line_Var<double> probability_of_success_var(&probability_of_success, { "p", "prob", "probability" }, true);
 		Command_Line_Var<char> verbosity_var(verbosity, { "v" }, false, 20);
 
