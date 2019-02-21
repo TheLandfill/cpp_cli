@@ -15,6 +15,7 @@ While the source code itself is standard c++11, the test program's Makefile uses
 1. [Parsing Rules](#parsing-rules)
     1. [Types the Library Can Handle](#types-the-library-can-handle)
         1. [How to Handle a `char` Array](#how-to-handle-a-char-array)
+    1. [Using Order Specific Options](#using-order-specific-options)
 1. [Exception Throwing](#exception-throwing)
 1. [Example Usage](#example-usage)
 1. [Extensibility to More Complex Command Line Arguments](#extensibility-to-more-complex-command-line-arguments)
@@ -26,10 +27,11 @@ While the source code itself is standard c++11, the test program's Makefile uses
 - Every non-trivial program has to parse command line arguments, which leaves programmers often writing their own parsers for each individual project even though they are often writing the same inefficient, rigid, and unnecessarily complex algorithms.
 - In my opinion, current CLI parsers either do far too little, such as GetOpt, or far too much, such as CLI11. Programs should do one thing and do it well. This library takes the data in the command line and puts it into your variables.
 - I wanted to contribute to the open source community and familiarize myself with GitHub.
+- A little bit of [Not Invented Here](https://en.wikipedia.org/wiki/Not_invented_here), to be honest. I still think what I have written is easier to use and much more robust than other libraries, but they likely think the same thing about this library.
 
 ## Getting Started
 
-As it currently stands, the header file will work on all systems, but the test program will have to be compiled using Windows.
+As it currently stands, the header file will work on all systems, but the test program will have to be compiled using a project on Windows.
 
 ### Prerequisites
 The library requires nothing but c++11. The test program already has symlinks to the required library and header file.
@@ -44,13 +46,13 @@ No installation required. Just download the [folder](src/cpp_command_line_parser
 1. Inside that scope, create a `Command_Line_Var<T>` (syntax specified below).
 1. Once you've created all the `Command_Line_Var`s, run the function `ARGS_PARSER::parse(argc, argv);`.
 1. All the variables will be set after hash finishes.
-1. Any non-flagged argument or subargument will be returned in a vector of "non_options" in the order in which they appear in the command line.
+1. Any non-flagged argument or ignored argument will be returned in a vector of "non_options" in the order in which they appear in the command line.
 
 ### Syntax of Use
 ```
 Command_Line_Var<T> variable_name_var(&variable_name, { "flag1", "flag2", "f" }, takes_args);
 ```
-where `T` is the type of the variable and `variable_name_var` is a stack allocated variable. The first argument is the address of the variable you want to set, the second variable is an array/vector of strings corresponding to flags that control the value of the variable, and the third argument is a bool that determines whether or not the flags take arguments themselves.
+where `T` is the type of the variable and `variable_name_var` is a stack allocated variable. The first argument is the address of the variable you want to set, the second variable is an array/vector of strings corresponding to flags that control the value of the variable, and the third argument is a bool that determines whether or not the flags take arguments themselves. If a `nullptr` is provided for the first argument, the parser will just treat it as if it were a non-option.
 
 ## Parsing Rules
 [This answer](https://stackoverflow.com/a/14738273/6629221) on stackexchange does a good job of summarizing the standard for command line argument syntax, and the library follows these rules, which are copied below for convenience.
@@ -109,8 +111,17 @@ Command_Line_Var<char> example_string_var(example_string, ..., ..., 10);
 
 Furthermore, you should allocate enough memory to store the longest argument you expect to receive. If you do not, you run the risk of a segmentation fault, and there is nothing the library can do to fix it or notify you that your buffer is too small.
 
+### Using Order Specific Options
+Without going into too much detail, the `-l` flag in `gcc` and `g++` has to come after other arguments in gcc, but my library destroys the order of options in most cases. To keep a flag in the list of non-options, provide `nullptr` for the first argument in the Command_Line_Var constructor where the address of a variable would normally go. For example:
+```
+Command_Line_Var<int> example_ignored_variable(nullptr, { "l", "library"}, true);
+```
+Any flag that starts with `-l` or `--library` will be considered as if it were a non-option. Note that the templated type was an int, but the type doesn't matter. If you wanted to do a `char`, you would have to provide a fourth argument that would not be used. If you set the third argument to false, it will convert `--library=something` to `--library\0something`, where `\0` is the null terminator.
+
+Furthermore, as it currently stands, having a `-l` in a group of multiple short arguments such as `-albc` will lead to a segmentation fault. If the order matters, then it should not be inside a group of multiple short arguments, period. However, I intend to fix the program so it throws an exception instead.
+
 ## Exception Throwing
-The library will throw exceptions (std::invalid_argument) when you provide a flag you did not specify (except for the single hyphen flag for standard input) or provide an argument to a flag that does not take arguments. When the library throws an argument, it will tell you the error and which flag caused the error. The exception will only print around the first 32 characters of the flag that caused the error.
+The library will throw exceptions (std::invalid_argument) when you provide a flag on the command line that you did not specify (except for the single hyphen flag for standard input) or provide an argument to a flag that does not take arguments. When the library throws an argument, it will tell you the error and which flag caused the error. The exception will only print around the first 32 characters of the flag that caused the error.
 
 ## Example Usage
 ```
@@ -179,8 +190,7 @@ Note that:
 - `set_base_variable` is a virtual function takes in a `const char *` and returns `void`. This function must be implemented to make the template specialization behave differently.
 
 ## Goals
-1. Add way to allow user to automatically move flags to non-options by default.
-    1. This is most important when dealing with flags that need to be in order, like gcc's -l library flag.
+1. Fix segmentation fault from having ignored flag in list of flags.
 1. Make Windows specific compilation.
     1. Either convert Makefiles to CMake or roll my own Project for Visual Studio.
 1. Add helpful error messages.
@@ -197,6 +207,8 @@ Note that:
     1. It is not a good idea for me to try to implement all the flags for `gcc`, but it does have a more complex parsing algorithm I could try to simulate at least part of.
     
 ## Goals Completed
+1. Add way to allow user to automatically move flags to non-options by default.
+    1. This is most important when dealing with flags that need to be in order, like gcc's -l library flag.
 1. Convert library to a single file for the user to include.
     1. Doing so would solve the issue of Windows specific compilation, as it would automatically be taken care of by the compiler.
     1. Due to the nature of the algorithm, it has a one time use so it should only be included once, meaning the hit from making the functions inline shouldn't be any worse than just having the library.
