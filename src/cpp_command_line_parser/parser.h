@@ -258,10 +258,17 @@ inline void Command_Line_Var<T>::set_base_variable(const char * b_v) {
 
 inline Command_Line_Var<char>::Command_Line_Var(char * b_v, std::vector<const char *> a, bool ta, int b_s) : Command_Line_Var_Interface(b_v, a, ta), buffer_size(b_s) {}
 
+inline Command_Line_Var<char>::Command_Line_Var(char & b_v, std::vector<const char *> a, bool ta) : Command_Line_Var_Interface(&b_v, a, ta), buffer_size(1) {}
+
 inline void Command_Line_Var<char>::set_base_variable(const char * b_v) {
 	char * base_variable_string = (char *)base_variable;
+	if (buffer_size == 1) {
+		*base_variable_string = b_v[0];
+		return;
+	}
 	int i = 0;
-	while (b_v[i] != '\0' && i < buffer_size) {
+	const int adj_buffer_size = buffer_size - 1;
+	while (b_v[i] != '\0' && i < adj_buffer_size) {
 		base_variable_string[i] = b_v[i];
 		i++;
 	}

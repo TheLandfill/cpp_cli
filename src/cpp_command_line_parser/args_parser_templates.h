@@ -29,6 +29,7 @@ private:
 	int buffer_size;
 public:
 	Command_Line_Var(char * b_v, std::vector<const char *> a, bool ta, int b_s);
+	Command_Line_Var(char & b_v, std::vector<const char *> a, bool ta);
 	virtual void set_base_variable(const char * b_v);
 };
 

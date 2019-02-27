@@ -25,6 +25,8 @@ int main(int argc, char ** argv) {
 	bool d_allow_infinite_recursion = false;
 	std::string d_configuration_name = "";
 	int d_debug_level = 0;
+
+	char single_char_test = '\0';
 	
 	{
 		Command_Line_Var<std::string> file_var(filename, { "f", "file", "filename" }, true);
@@ -35,6 +37,8 @@ int main(int argc, char ** argv) {
 		Command_Line_Var<char> verbosity_var(verbosity, { "v" }, false, 20);
 		Command_Line_Var<std::string> standard_input_hyphen_var(standard_input_hyphen, { "-" }, false);
 		Command_Line_Var<int> ignored_flag_var(nullptr, { "l", "library" }, true);
+
+		Command_Line_Var<char> single_char_test_var(single_char_test, { "c", "C", "x", "X" }, false);
 
 		// YOU DO NOT NEED TO USE W_SPECIALIZATIONS, W_VALUES, or W_ARGS
 		W_SPECIALIZATION w_options(100);
@@ -69,6 +73,7 @@ int main(int argc, char ** argv) {
 	std::cout << "probability_of_success:\t" << probability_of_success << std::endl;
 	std::cout << "standard_input_hyphen:\t" << standard_input_hyphen << std::endl;
 	std::cout << "verbosity:\t" << verbosity << std::endl;
+	std::cout << "single_char_test:\t" << single_char_test << std::endl;
 
 	std::cout << "--------------------W FLAGS---------------------" << std::endl;
 	std::cout << "w_sign_conversion:\t" << w_sign_conversion << std::endl;
