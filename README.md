@@ -51,9 +51,14 @@ No installation required. Just download the [folder](src/cpp_command_line_parser
 
 ### Syntax of Use
 ```
+// WILL WORK IN ALL CASES, INCLUDING FOR Command_Line_Var<char>.
+Command_Line_Var<T> variable_name_var(variable_name, { "flag1", "flag2", "f" }, takes_args);
+// DEPRECATED, but will still work for everything except Command_Line_Var<char>. The ampersand doesn't really make a difference otherwise.
 Command_Line_Var<T> variable_name_var(&variable_name, { "flag1", "flag2", "f" }, takes_args);
 ```
-where `T` is the type of the variable and `variable_name_var` is a stack allocated variable. The first argument is the address of the variable you want to set, the second variable is an array/vector of strings corresponding to flags that control the value of the variable, and the third argument is a bool that determines whether or not the flags take arguments themselves. If a `nullptr` is provided for the first argument, the parser will just treat it as if it were a non-option.
+where `T` is the type of the variable and `variable_name_var` is a stack allocated variable. The first argument is either the variable you want to set, its address (as long as it isn't a `Command_Line_Var<char>`), or a `nullptr`, the second variable is an array/vector of strings corresponding to flags that control the value of the variable, and the third argument is a bool that determines whether or not the flags take arguments themselves.
+
+If a `nullptr` is provided for the first argument, the parser will just treat it as if it were a non-option.
 
 ## Parsing Rules
 [This answer](https://stackoverflow.com/a/14738273/6629221) on stackexchange does a good job of summarizing the standard for command line argument syntax, and the library follows these rules, which are copied below for convenience.
@@ -112,6 +117,10 @@ Command_Line_Var<char> example_string_var(example_string, ..., ..., 10);
 
 Furthermore, you should allocate enough memory to store the longest argument you expect to receive. If you do not, you run the risk of a segmentation fault, and there is nothing the library can do to fix it or notify you that your buffer is too small.
 
+Note that `std::string`s do not have this problem, as they manage their own buffer sizes.
+
+If you just want to set a singular `char`, passing it in as a normal variable should work.
+
 ### Using Options Whose Locations Matter
 Without going into too much detail, the `-l` flag in `gcc` and `g++` has to come after other arguments in gcc, but my library destroys the order of options in most cases. To keep a flag in the list of non-options, provide `nullptr` for the first argument in the Command_Line_Var constructor where the address of a variable would normally go. For example:
 ```
@@ -138,14 +147,14 @@ int main(int argc, char ** argv){
 
   {
     // Both filename and recursion_level take args, so their third argument is true
-    Command_Line_Var<std::string> filename_var(&filename, { "f", "filename", "file" }, true);
-    Command_Line_Var<int> recursion_level_var(&recursion_level, { "r", "recursion", "max_depth" }, true);
+    Command_Line_Var<std::string> filename_var(filename, { "f", "filename", "file" }, true);
+    Command_Line_Var<int> recursion_level_var(recursion_level, { "r", "recursion", "max_depth" }, true);
     
     // show_output doesn't take arguments, so its third argument is false
-    Command_Line_Var<std::string> show_output_var(&show_output, { "show_output", "s", "no_out", "half_out" }, false);
+    Command_Line_Var<std::string> show_output_var(show_output, { "show_output", "s", "no_out", "half_out" }, false);
     
     // A single hyphen means standard input, but it doesn't have to. If you want, add the line
-    Command_Line_Var<std::string> standard_input_var(&standard_input, { "-" }, false);
+    Command_Line_Var<std::string> standard_input_var(standard_input, { "-" }, false);
     
     // A char * has type char in the template and doesn't take the address of the variable.
     Command_Line_Var<char> c_version_of_string_var(c_version_of_string, { "v" }, false, 20);
@@ -247,6 +256,7 @@ int main(int argc, char ** argv){
 
 ## Goals
 1. Add subcommands, which are things like `git commit`, where `git` is the main program and `commit` is a subcommand.
+1. Check if single `char` arguments work.
 1. Add ability to create a vector of arguments provided to a flag.
 1. Make Windows specific compilation.
     1. Either convert Makefiles to CMake or roll my own Project for Visual Studio.
