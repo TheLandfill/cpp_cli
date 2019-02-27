@@ -18,6 +18,7 @@ public:
 template<typename T>
 class Command_Line_Var : public Command_Line_Var_Interface {
 public:
+	Command_Line_Var(T & b_v, std::vector<const char *> a, bool ta);
 	Command_Line_Var(T * b_v, std::vector<const char *> a, bool ta);
 	virtual void set_base_variable(const char * b_v);
 };
@@ -27,7 +28,7 @@ class Command_Line_Var<char> : public Command_Line_Var_Interface {
 private:
 	int buffer_size;
 public:
-	Command_Line_Var(void * b_v, std::vector<const char *> a, bool ta, int b_s);
+	Command_Line_Var(char * b_v, std::vector<const char *> a, bool ta, int b_s);
 	virtual void set_base_variable(const char * b_v);
 };
 

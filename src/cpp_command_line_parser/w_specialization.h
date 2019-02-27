@@ -35,7 +35,7 @@ class W_VALUE : public W_INTERFACE {
 private:
 	T value;
 public:
-	W_VALUE(T * b_v, W_SPECIALIZATION & w_s, const char * flag, T v) : W_INTERFACE(b_v, w_s, flag), value(v) {}
+	W_VALUE(T & b_v, W_SPECIALIZATION & w_s, const char * flag, T v) : W_INTERFACE(&b_v, w_s, flag), value(v) {}
 	virtual void set_base_variable(const char * flag) {
 		if (flag[0] != '\0') {
 			throw std::invalid_argument("Flag does not require arguments.");
@@ -47,7 +47,7 @@ public:
 template <typename T>
 class W_ARG : public W_INTERFACE {
 public:
-	W_ARG(T * b_v, W_SPECIALIZATION & w_s, const char * alias) : W_INTERFACE(b_v, w_s, alias) {}
+	W_ARG(T & b_v, W_SPECIALIZATION & w_s, const char * alias) : W_INTERFACE(&b_v, w_s, alias) {}
 	virtual void set_base_variable(const char * arg) {
 		*(T *)base_variable = arg;
 	}

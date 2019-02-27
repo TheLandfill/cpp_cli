@@ -244,6 +244,9 @@ inline bool Command_Line_Var_Interface::ignored() const {
 //////////////////////////Command_Line_Var Definitions/////////////////////////
 
 template<typename T>
+inline Command_Line_Var<T>::Command_Line_Var(T & b_v, std::vector<const char *> a, bool ta) : Command_Line_Var_Interface(&b_v, a, ta) {}
+
+template<typename T>
 inline Command_Line_Var<T>::Command_Line_Var(T * b_v, std::vector<const char *> a, bool ta) : Command_Line_Var_Interface(b_v, a, ta) {}
 
 template<typename T>
@@ -253,7 +256,7 @@ inline void Command_Line_Var<T>::set_base_variable(const char * b_v) {
 
 ///////////////////////////Template Specializations////////////////////////////
 
-inline Command_Line_Var<char>::Command_Line_Var(void * b_v, std::vector<const char *> a, bool ta, int b_s) : Command_Line_Var_Interface(b_v, a, ta), buffer_size(b_s) {}
+inline Command_Line_Var<char>::Command_Line_Var(char * b_v, std::vector<const char *> a, bool ta, int b_s) : Command_Line_Var_Interface(b_v, a, ta), buffer_size(b_s) {}
 
 inline void Command_Line_Var<char>::set_base_variable(const char * b_v) {
 	char * base_variable_string = (char *)base_variable;
