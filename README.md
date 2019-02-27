@@ -146,17 +146,13 @@ int main(int argc, char ** argv){
   std::vector<const char *> non_options;
 
   {
-    // Both filename and recursion_level take args, so their third argument is true
     Command_Line_Var<std::string> filename_var(filename, { "f", "filename", "file" }, true);
     Command_Line_Var<int> recursion_level_var(recursion_level, { "r", "recursion", "max_depth" }, true);
-    
-    // show_output doesn't take arguments, so its third argument is false
     Command_Line_Var<std::string> show_output_var(show_output, { "show_output", "s", "no_out", "half_out" }, false);
     
     // A single hyphen means standard input, but it doesn't have to. If you want, add the line
     Command_Line_Var<std::string> standard_input_var(standard_input, { "-" }, false);
     
-    // A char * has type char in the template and doesn't take the address of the variable.
     Command_Line_Var<char> c_version_of_string_var(c_version_of_string, { "v" }, false, 20);
     non_options = ARGS_PARSER::parse(argc, argv);
   }
@@ -164,44 +160,28 @@ int main(int argc, char ** argv){
   // Other code. At this point, all variables are set.
 }
 ```
+You can't get much simpler than two lines per variable (half of which are just initializing the variable anyway), but if you want to do more complicated things, you will have to get more complicated.
 
-## Extensibility to More Complex Command Line Arguments
+### Alternatives to Creating `Command_Line_Var`s in a Scope
+As a quick aside, we can consider alternatives to creating `Command_Line_Var`s in a scope and then running `ARGS_PARSER::parse`. No matter what you do, each of the `Command_Line_Var`s must exist while `ARGS_PARSER::parse` is running, as they represent the links between the aliases and the variables and the type conversion they must perform. After the command line has been parsed, they don't matter, and can be deleted without causing any problems.
 
-If you look at gcc's documentation, you'll find what looks like 2000 different options, but there are really only less than twenty. However, each argument takes multiple subarguments. In the vanilla application of this library, `-Wall -Wno-sign-compare` would set the `std::string` or `char *` that the flag `-W` refers to to `no-sign-compare` with no mention of `-Wall`. You can fix this issue by defining your own class or struct and overriding the template for a `Command_Line_Var` and writing your own version of `set_base_variable`. Below is the template specialization for `char` which allows it to act like a `char *`:
+C++ has two ways of allocating memory, and they come with their advantages and disadvantages:
+1. The stack, which has the advantage of cleaning itself up, and possibly being easier for the compiler to optimize given that all the stack allocated variables have a fixed size whose types are known at compile time. Its main drawback, as far as I can tell, is that it requires an individual name for each variable, which is kind of annoying.
+2. The heap, which has the advantage of not needing to explicitly name the variables, as you can just add them to a `std::vector<Command_Line_Var_Interface *>` by using `vector_name.push_back(new Command_Line_Var<char>(...)`, but it suffers from having to clean them up manually and the compiler needing to dynamically allocate space for your program.
 
-```
-// parser.h
-template<>
-class Command_Line_Var<char> : public Command_Line_Var_Interface {
-private:
-        int buffer_size;
-public:
-        Command_Line_Var(void * b_v, std::vector<const char *> a, bool ta, int b_s);
-        virtual void set_base_variable(const char * b_v);
-};
+These disadvantages aren't significant enough for me to care, so I'm just going with the stack as it is more likely to have a slightly better performance.
 
-// parser.cpp
-Command_Line_Var<char>::Command_Line_Var(void * b_v, std::vector<const char *> a, bool ta, int b_s) : Command_Line_Var_Interface(b_v, a, ta), buffer_size(b_s) {}
+The best way I can think of would be to define a `struct` with all the relevant variables public who had a member function that would have what we currently have as its function body, which will clean up your `main` function significantly. Plus, it's more natural to people who use c++.
 
-void Command_Line_Var<char>::set_base_variable(const char * b_v) {
-        char * base_variable_string = (char *)base_variable;
-        int i = 0;
-        while (b_v[i] != '\0' && i < buffer_size) {
-                base_variable_string[i] = b_v[i];
-                i++;
-        }
-        base_variable_string[i] = '\0';
-}
-```
+## W_SPECIALIZATION
 
-Note that:
-- The template specialization for `char` extends `public Command_Line_Var_Interface`.
-- It includes a new variable `buffer_size`, which prevents it from going beyond its buffer. Because it has more variables than a `Command_Line_Var_Interface`, it needs to define its own constructor. Normally, if you don't have extra variables or don't need to do anything besides setting variables in the constructor, you don't need to define a constructor.
-- `set_base_variable` is a virtual function takes in a `const char *` and returns `void`. This function must be implemented to make the template specialization behave differently.
+This is where things get more complicated, though not by as much as you would expect.
 
-I myself have implemented a general system to handle gcc-style flags called `W_SPECIALIZATION` after gcc's `-W` argument. `W_SPECIALIZATION` is in its own separate header file, "w_specialization.h", which must be included for you to use. You must still include "parser.h". The syntax for `W_SPECIALIZATION` is intentionally similar to the syntax for a `Command_Line_Var`. Note that you are not in any way required to use this type of argument if you don't want to, and can use the simpler versions above.
+I have implemented a general system to handle gcc-style flags called `W_SPECIALIZATION` after gcc's `-W` argument. `W_SPECIALIZATION` is in its own separate header file, "w_specialization.h", which must be included for you to use. You must still include "parser.h". The syntax for `W_SPECIALIZATION` is intentionally similar to the syntax for a `Command_Line_Var`. Note that you are not in any way required to use this type of argument if you don't want to, and can use the simpler versions above.
 
-Unlike a `Command_Line_Var`, `W_VALUE`s and `W_ARG`s prevent you from providing more than one name.
+`W_SPECIALIZATION` also works normally with other command flags and with other `W_SPECIALIZATIONS`.
+
+Unlike a `Command_Line_Var`, `W_VALUE`s and `W_ARG`s prevent you from providing more than one subalias, though you could if you just made multiple `W_VALUE`s or `W_ARGS`.
 
 ### W_SPECIALIZATION Example
 
@@ -217,46 +197,101 @@ int main(int argc, char ** argv){
     int w_warning_level = 1;
     char w_type = 'x';
     
+    int d_debug_level = 0;
+    bool d_out_of_bounds_checks = false;
+    bool d_recursion_bounds = false;
+    bool d_ingore_exceptions = true;
+    
+    char regular_c_string[100];
+    unsigned int redundancy_of_this_README = (unsigned int)-1;
+    
   {
     W_SPECIALIZATION w_options(100);
-    // "-Wsign-conversion" sets w_sign_conversion to "true" if provided as an argument
-    W_VALUE<bool> w_sign_conversion_var(&w_sign_conversion, w_options, "sign-conversion", true);
     
-    // "-Wno-sign-conversion" sets w_sign_conversion to "false" if provided as an argument
-    W_VALUE<bool> w_no_sign_conversion_var(&w_sign_conversion, w_options, "no-sign-conversion" , false);
+    W_VALUE<bool> w_sign_conversion_var(w_sign_conversion, w_options, "sign-conversion", true);
+    W_VALUE<bool> w_no_sign_conversion_var(w_sign_conversion, w_options, "no-sign-conversion" , false);
+    W_VALUE<bool> w_all_var(w_all, w_options, "all", true);
+    W_VALUE<bool> w_extra_var(w_extra, w_options, "extra", true);
     
-    // "-Wall" sets w_all to "true" if provided as an argument.
-    W_VALUE<bool> w_all_var(&w_all, w_options, "all", true);
+    W_ARG<int> w_error_level_var(w_error_level, w_options, "error-level");
+    W_ARG<int> w_warning_level_var(w_warning_level, w_options, "warning-level");
     
-    // "-Wextra" sets w_extra to "true" if provided as an argument.
-    W_VALUE<bool> w_extra_var(&w_extra, w_options, "extra", true);
+    W_VALUE<char> w_type_a_var(w_type, w_options, "file", 'f');
+    W_VALUE<char> w_type_b_var(w_type, w_options, "dir", 'd');
+    W_VALUE<char> w_type_c_var(w_type, w_options, "link", 'l');
+    W_VALUE<char> w_type_d_var(w_type, w_options, "any", 'a');
     
-    // "-Werror-level=[number]" sets w_error_level to [number] if provided as an argument.
-    W_ARG<int> w_error_level_var(&w_error_level, w_options, "error-level");
-    
-    // "-Wwarning-level=[number]" sets w_warning_level to [number] if provided as an argument.
-    W_ARG<int> w_warning_level_var(&w_warning_level, w_options, "warning-level");
-    
-    // Each of these four arguments will set the variable w_type if found on the command line.
-    // "-Wfile" will set w_type to 'f', "-Wdir" will set w_type to 'd', "-Wlink" will set w_type
-    // to 'l', and "-Wany" will set w_type to 'a'.
-    W_VALUE<char> w_type_a_var(&w_type, w_options, "file", 'f');
-    W_VALUE<char> w_type_b_var(&w_type, w_options, "dir", 'd');
-    W_VALUE<char> w_type_c_var(&w_type, w_options, "link", 'l');
-    W_VALUE<char> w_type_d_var(&w_type, w_options, "any", 'a');
-    
-    // Defines the class of arguments that start with "-W".
     Command_Line_Var<W_SPECIALIZATION> w_options_var(&w_options, { "W" }, true);
+    
+    // Also works with other W_SPECIALIZATIONS
+    W_SPECIALIZATION d_options(100);
+    
+    W_ARG<int> d_debug_level_var(d_debug_level, d_options, "level");
+    
+    W_VALUE<bool> d_out_of_bounds_checks_var(d_out_of_bounds_checks, d_options, "out-of-bounds-checks", true);
+    W_VALUE<bool> d_no_out_of_bounds_checks_var(d_out_of_bounds_checks, d_options, "no-out-of-bounds-checks", false);
+    W_VALUE<bool> d_recursion_bounds_var(d_recursion_bounds, d_options, "recursion-bounds", true);
+    W_VALUE<bool> d_no_recursion_bounds_var(d_recursion_bounds, d_options, "no-recursion-bounds", false);
+    W_VALUE<bool> d_ignore_exceptions_var(d_ignore_exceptions, d_options, "ignore-exceptions", true);
+    W_VALUE<bool> d_no_ignore_exceptions_var(d_ignore_exceptions, d_options, "no-ignore-exceptions", false);
+    
+    Command_Line_Var<W_SPECIALIZATION> d_options_var(d_options, { "D" }, true);
+    
+    // Also works with regular Command_Line_Vars
+    Command_Line_Var<char> regular_c_string_var(regular_c_string, { "f", "file", "filename" }, true, 100);
+    Command_Line_Var<unsigned int> redundancy_of_this_README_var(redundancy_of_this_README, { "r", "redundancy" }, true);
+    
     non_options = ARGS_PARSER::parse(argc, argv);
   }
   
   // Other code. At this point, all variables are set.
 }
 ```
+This might look a little daunting, but bear in mind that we're linking somewhere around twenty flags to twelve variables while imposing a superstucture on the flags by using multiple `W_SPECIALIZATION`s. Four of these links come from setting `w_type` alone. It's also now to around three lines per variable, which isn't that much of an increase.
+
+## Extensibility to More Complex Command Line Arguments
+You can implement more complex parsing by defining your own class or struct and overriding the template for a `Command_Line_Var` and writing your own version of `set_base_variable`. Below is the template specialization for `char` which allows it to act like a `char *`:
+
+```
+// args_parser_templates.h
+
+template<>
+class Command_Line_Var<char> : public Command_Line_Var_Interface {
+private:
+        int buffer_size;
+public:
+        Command_Line_Var(void * b_v, std::vector<const char *> a, bool ta, int b_s);
+        virtual void set_base_variable(const char * b_v);
+};
+
+// parser.h
+#include "args_parser_templates.h"
+
+// Other code
+
+inline Command_Line_Var<char>::Command_Line_Var(void * b_v, std::vector<const char *> a, bool ta, int b_s) : Command_Line_Var_Interface(b_v, a, ta), buffer_size(b_s) {}
+
+inilne void Command_Line_Var<char>::set_base_variable(const char * b_v) {
+        char * base_variable_string = (char *)base_variable;
+        int i = 0;
+        while (b_v[i] != '\0' && i < buffer_size) {
+                base_variable_string[i] = b_v[i];
+                i++;
+        }
+        base_variable_string[i] = '\0';
+}
+```
+
+Note that:
+- The template specialization for `char` extends `public Command_Line_Var_Interface`.
+- It includes a new variable `buffer_size`, which prevents it from going beyond its buffer. Because it has more variables than a `Command_Line_Var_Interface`, it needs to define its own constructor. Normally, if you don't have extra variables or don't need to do anything besides setting variables in the constructor, you don't need to define a constructor.
+- `set_base_variable` is a virtual function takes in a `const char *` and returns `void`. This function must be implemented to make the template specialization behave differently.
+
+To specialize the template, you must include the header file `args_parser_templates.h`.
 
 ## Goals
 1. Add subcommands, which are things like `git commit`, where `git` is the main program and `commit` is a subcommand.
-1. Check if single `char` arguments work.
+1. See if I can't move `base_variable` from `Command_Line_Var_Interface` to the templated subclass of `Command_Line_Var`, which would really just reduce the typecast.
 1. Add ability to create a vector of arguments provided to a flag.
 1. Make Windows specific compilation.
     1. Either convert Makefiles to CMake or roll my own Project for Visual Studio.
@@ -273,6 +308,7 @@ int main(int argc, char ** argv){
     
 ## Goals Completed
 1. Add example of template class specialization as specified in the section in test program.
+1. Single `char` arguments work. You could now type something like ```Command_Line_Var<char> single_char_var(single_char, { "A", "a", "B", "b" }, false)``` and it will work.
 1. Fix segmentation fault from having ignored flag in list of flags.
 1. Add way to allow user to automatically move flags to non-options by default.
     1. This is most important when dealing with flags that need to be in order, like gcc's -l library flag.
