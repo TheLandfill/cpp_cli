@@ -19,6 +19,7 @@ int main(int argc, char ** argv) {
 	bool w_extra = false;
 	int w_error_level = 1;
 	int w_warning_level = 1;
+	char w_type = 'x';
 
 	bool d_ignore_parentheses = false;
 	bool d_allow_infinite_recursion = false;
@@ -41,6 +42,10 @@ int main(int argc, char ** argv) {
 		W_VALUE<bool> w_no_sign_conversion_var(&w_sign_conversion, w_options, "no-sign-conversion" , false);
 		W_VALUE<bool> w_all_var(&w_all, w_options, "all", true);
 		W_VALUE<bool> w_extra_var(&w_extra, w_options, "extra", true);
+		W_VALUE<char> w_type_a_var(&w_type, w_options, "file", 'f');
+		W_VALUE<char> w_type_b_var(&w_type, w_options, "dir", 'd');
+		W_VALUE<char> w_type_c_var(&w_type, w_options, "link", 'l');
+		W_VALUE<char> w_type_d_var(&w_type, w_options, "any", 'a');
 		W_ARG<int> w_error_level_var(&w_error_level, w_options, "error-level");
 		W_ARG<int> w_warning_level_var(&w_warning_level, w_options, "warning-level");
 		Command_Line_Var<W_SPECIALIZATION> w_options_var(&w_options, { "W" }, true);
@@ -56,6 +61,7 @@ int main(int argc, char ** argv) {
 		non_options = ARGS_PARSER::parse(argc, argv);
 	}
 
+	std::cout << "--------------------STANDARD--------------------" << std::endl;
 	std::cout << "filename:\t" << filename << std::endl;
 	std::cout << "recursion:\t" << recursion_level << std::endl;
 	std::cout << "flag:\t\t" << flag << std::endl;
@@ -64,11 +70,15 @@ int main(int argc, char ** argv) {
 	std::cout << "standard_input_hyphen:\t" << standard_input_hyphen << std::endl;
 	std::cout << "verbosity:\t" << verbosity << std::endl;
 
+	std::cout << "--------------------W FLAGS---------------------" << std::endl;
 	std::cout << "w_sign_conversion:\t" << w_sign_conversion << std::endl;
 	std::cout << "w_all:\t" << w_all << std::endl;
 	std::cout << "w_extra:\t" << w_extra << std::endl;
 	std::cout << "w_error_level:\t" << w_error_level << std::endl;
 	std::cout << "w_warning_level:\t" << w_warning_level << std::endl;
+	std::cout << "w_type:\t" << w_type << std::endl;
+
+	std::cout << "--------------------D FLAGS---------------------" << std::endl;
 	std::cout << "d_ignore_parentheses:\t" << d_ignore_parentheses << std::endl;
 	std::cout << "d_allow_infinite_recursion:\t" << d_allow_infinite_recursion << std::endl;
 	std::cout << "d_configuration_name:\t" << d_configuration_name << std::endl;
