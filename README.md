@@ -19,6 +19,7 @@ While the source code itself is standard c++11, the test program's Makefile uses
 1. [Exception Throwing](#exception-throwing)
 1. [Example Usage](#example-usage)
 1. [Extensibility to More Complex Command Line Arguments](#extensibility-to-more-complex-command-line-arguments)
+    1. [W_SPECIALIZATION Example](#w_specialization-example)
 1. [Goals](#goals)
 1. [Goals Completed](#goals-completed)
 1. [License](#license)
@@ -189,9 +190,64 @@ Note that:
 - It includes a new variable `buffer_size`, which prevents it from going beyond its buffer. Because it has more variables than a `Command_Line_Var_Interface`, it needs to define its own constructor. Normally, if you don't have extra variables or don't need to do anything besides setting variables in the constructor, you don't need to define a constructor.
 - `set_base_variable` is a virtual function takes in a `const char *` and returns `void`. This function must be implemented to make the template specialization behave differently.
 
+I myself have implemented a general system to handle gcc-style flags called `W_SPECIALIZATION` after gcc's `-W` argument. `W_SPECIALIZATION` is in its own separate header file, "w_specialization.h", which must be included for you to use. You must still include "parser.h". The syntax for `W_SPECIALIZATION` is intentionally similar to the syntax for a `Command_Line_Var`. Note that you are not in any way required to use this type of argument if you don't want to, and can use the simpler versions above.
+
+Unlike a `Command_Line_Var`, `W_VALUE`s and `W_ARG`s prevent you from providing more than one name.
+
+### W_SPECIALIZATION Example
+
+```
+#include "parser.h"
+#include "w_specialization.h"
+
+int main(int argc, char ** argv){
+    bool w_sign_conversion = true;
+    bool w_all = false;
+    bool w_extra = false;
+    int w_error_level = 1;
+    int w_warning_level = 1;
+    char w_type = 'x';
+    
+  {
+    W_SPECIALIZATION w_options(100);
+    // "-Wsign-conversion" sets w_sign_conversion to "true" if provided as an argument
+    W_VALUE<bool> w_sign_conversion_var(&w_sign_conversion, w_options, "sign-conversion", true);
+    
+    // "-Wno-sign-conversion" sets w_sign_conversion to "false" if provided as an argument
+    W_VALUE<bool> w_no_sign_conversion_var(&w_sign_conversion, w_options, "no-sign-conversion" , false);
+    
+    // "-Wall" sets w_all to "true" if provided as an argument.
+    W_VALUE<bool> w_all_var(&w_all, w_options, "all", true);
+    
+    // "-Wextra" sets w_extra to "true" if provided as an argument.
+    W_VALUE<bool> w_extra_var(&w_extra, w_options, "extra", true);
+    
+    // "-Werror-level=[number]" sets w_error_level to [number] if provided as an argument.
+    W_ARG<int> w_error_level_var(&w_error_level, w_options, "error-level");
+    
+    // "-Wwarning-level=[number]" sets w_warning_level to [number] if provided as an argument.
+    W_ARG<int> w_warning_level_var(&w_warning_level, w_options, "warning-level");
+    
+    // Each of these four arguments will set the variable w_type if found on the command line.
+    // "-Wfile" will set w_type to 'f', "-Wdir" will set w_type to 'd', "-Wlink" will set w_type
+    // to 'l', and "-Wany" will set w_type to 'a'.
+    W_VALUE<char> w_type_a_var(&w_type, w_options, "file", 'f');
+    W_VALUE<char> w_type_b_var(&w_type, w_options, "dir", 'd');
+    W_VALUE<char> w_type_c_var(&w_type, w_options, "link", 'l');
+    W_VALUE<char> w_type_d_var(&w_type, w_options, "any", 'a');
+    
+    // Defines the class of arguments that start with "-W".
+    Command_Line_Var<W_SPECIALIZATION> w_options_var(&w_options, { "W" }, true);
+    non_options = ARGS_PARSER::parse(argc, argv);
+  }
+  
+  // Other code. At this point, all variables are set.
+}
+```
+
 ## Goals
 1. Add subcommands, which are things like `git commit`, where `git` is the main program and `commit` is a subcommand.
-1. Add example of template class specialization as specified in the section in test program.
+1. Add ability to create a vector of arguments provided to a flag.
 1. Make Windows specific compilation.
     1. Either convert Makefiles to CMake or roll my own Project for Visual Studio.
 1. Add helpful error messages.
@@ -206,6 +262,7 @@ Note that:
     1. It is not a good idea for me to try to implement all the flags for `gcc`, but it does have a more complex parsing algorithm I could try to simulate at least part of.
     
 ## Goals Completed
+1. Add example of template class specialization as specified in the section in test program.
 1. Fix segmentation fault from having ignored flag in list of flags.
 1. Add way to allow user to automatically move flags to non-options by default.
     1. This is most important when dealing with flags that need to be in order, like gcc's -l library flag.
