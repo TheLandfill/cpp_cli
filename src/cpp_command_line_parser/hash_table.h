@@ -48,6 +48,7 @@ private:
 	size_t find_element_beyond_tombstones(const char * str, size_t index) const {
 		while (registry_list[index].key != nullptr && strcmp(registry_list[index].key, str) != 0) {
 			index++;
+			index &= table_size;
 		}
 		return index;
 	}
@@ -67,6 +68,9 @@ public:
 
 	void insert(const char * str, T * val) {
 		size_t location = hash_element(str);
+		if (location == (size_t)(-1)) {
+			return;
+		}
 		short probe_dist = 0;
 		while (registry_list[location].key != nullptr && strcmp(registry_list[location].key, "") != 0 && strcmp(registry_list[location].key, str) != 0) {
 			location++;
@@ -119,10 +123,41 @@ public:
 	}
 
 	T * operator[](const char * str) const {
+		size_t expected_location = find_element_beyond_tombstones(str, hash_element(str));
+		if (strcmp(registry_list[expected_location].key, str) != 0) {
+			char error_message_buffer[] = "Key not in table: \0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
+			for (int i = 0; i < 32 && str[i] != '\0'; i++) {
+				error_message_buffer[i + 18] = str[i];
+			}
+			throw std::invalid_argument(error_message_buffer);
+		}
 		return registry_list[find_element_beyond_tombstones(str, hash_element(str))].value;
 	}
+
 	int count(const char * str) const {
 		return registry_list[find_element_beyond_tombstones(str, hash_element(str))].key != nullptr;
+	}
+
+	void clear() {
+		for (size_t i = 0; i < registry_list.size(); i++) {
+			registry_list[i] = Hash_Table_Registration<T>();
+		}
+	}
+
+	void rehash() {
+		table_size <<= 1;
+		table_size |= 1;
+		if (table_size < (size_t)(-1)) {
+			std::vector<Hash_Table_Registration<T> > new_hash_table(table_size + 1, Hash_Table_Registration<T>());
+			registry_list.swap(new_hash_table);
+			for (size_t i = 0; i < new_hash_table.size(); i++) {
+				if (new_hash_table[i].key != nullptr && strcmp(new_hash_table[i].key, "") != 0) {
+					insert(new_hash_table[i].key, new_hash_table[i].value);
+				}
+			}		
+		} else {
+			throw std::length_error("You are hashing more elements than a vector can hold.");
+		}
 	}
 };
 

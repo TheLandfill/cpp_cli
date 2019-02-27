@@ -88,6 +88,10 @@ int main(int argc, char ** argv) {
 		// not matter.
 		Command_Line_Var<int> ignored_flag_var(nullptr, { "l", "library" }, true);
 
+		// Having the same flag refer to two different Command_Line_Vars will
+		// cause the program to fail and tell you which flag.
+		// Command_Line_Var<int> breaks_program(nullptr, { "l" }, false);
+
 		// Non options must be declared outside the scope unless you don't
 		// need to use them.
 		non_options = ARGS_PARSER::parse(argc, argv);

@@ -60,10 +60,18 @@ inline std::vector<const char *> ARGS_PARSER::parse(int argc, char ** argv, size
 
 inline void ARGS_PARSER::fill_hash_table(size_t num_unique_flags) {
 	command_line_settings_map = Hash_Table<Command_Line_Var_Interface>(num_unique_flags);
+	Hash_Table<int> flag_already_used(num_unique_flags);
 	for (size_t i = 0; i < ARGS_PARSER::list_of_cmd_var.size(); i++) {
 		Command_Line_Var_Interface * cur_com_var = list_of_cmd_var[i];
 		const std::vector<const char *> & cur_aliases = cur_com_var->get_aliases();
 		for (size_t j = 0; j < cur_aliases.size(); j++) {
+			if (flag_already_used.count(cur_aliases[j])) {
+				const int buffer_size = 52;
+				const int start_of_available_section = 19;
+				char error_message[buffer_size] = "Flag already used: \0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
+				invalid_use_exception_throwing(error_message, buffer_size, start_of_available_section, cur_aliases[j]);
+			}
+			flag_already_used.insert(cur_aliases[j], nullptr);
 			command_line_settings_map.insert(cur_aliases[j], cur_com_var);
 		}
 	}
@@ -268,7 +276,7 @@ inline void Command_Line_Var<unsigned int>::set_base_variable(const char * b_v) 
 }
 
 template<>
-void Command_Line_Var<long>::set_base_variable(const char * b_v) {
+inline void Command_Line_Var<long>::set_base_variable(const char * b_v) {
 	*(long *)base_variable = strtol(b_v, nullptr, 10);
 }
 
