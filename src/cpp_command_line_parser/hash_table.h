@@ -26,10 +26,9 @@ private:
 	size_t num_elements = 0;
 	double load_factor = 0.7;
 	size_t table_size = 1;
-	size_t num_tombstones = 0;
 private:
 	// A nullptr key is an untouched element
-	// A "" is a tombstone
+	// A "" is a tombstone (MIGHT NOT NEED BECAUSE ROBIN HOOD HASHING)
 	size_t hash_element(const char * str) const {
 		if (strcmp(str, "") == 0) {
 			return (size_t)-1;
@@ -46,6 +45,7 @@ private:
 	}
 
 	size_t find_element_beyond_tombstones(const char * str, size_t index) const {
+		index &= table_size;
 		while (registry_list[index].key != nullptr && strcmp(registry_list[index].key, str) != 0) {
 			index++;
 			index &= table_size;
@@ -66,13 +66,13 @@ public:
 		}
 	}
 
-	void insert(const char * str, T * val) {
+	int insert(const char * str, T * val) {
 		size_t location = hash_element(str);
 		if (location == (size_t)(-1)) {
-			return;
+			return -1;
 		}
 		short probe_dist = 0;
-		while (registry_list[location].key != nullptr && strcmp(registry_list[location].key, "") != 0 && strcmp(registry_list[location].key, str) != 0) {
+		while (registry_list[location].key != nullptr && strcmp(registry_list[location].key, str) != 0) {
 			location++;
 			probe_dist++;
 			Hash_Table_Registration<T> & cur_htr = registry_list[location];
@@ -91,15 +91,18 @@ public:
 			}
 			location &= table_size;
 		}
-		num_tombstones -= registry_list[location].key != nullptr;
 		registry_list[location].key = str;
 		registry_list[location].value = val;
 		registry_list[location].probe_dist = probe_dist;
 		num_elements++;
+		return location;
 	}
 
 	void remove(const char * str) {
 		size_t location = hash_element(str);
+		if (location == (size_t)(-1)) {
+			return;
+		}
 		location = find_element_beyond_tombstones(str, location);
 		if (registry_list[location].key == nullptr) {
 			return;
@@ -131,7 +134,7 @@ public:
 			}
 			throw std::invalid_argument(error_message_buffer);
 		}
-		return registry_list[find_element_beyond_tombstones(str, hash_element(str))].value;
+		return registry_list[expected_location].value;
 	}
 
 	int count(const char * str) const {
@@ -140,7 +143,7 @@ public:
 
 	void clear() {
 		for (size_t i = 0; i < registry_list.size(); i++) {
-			registry_list[i] = Hash_Table_Registration<T>();
+			registry_list[i].key = nullptr;
 		}
 	}
 
@@ -151,7 +154,7 @@ public:
 			std::vector<Hash_Table_Registration<T> > new_hash_table(table_size + 1, Hash_Table_Registration<T>());
 			registry_list.swap(new_hash_table);
 			for (size_t i = 0; i < new_hash_table.size(); i++) {
-				if (new_hash_table[i].key != nullptr && strcmp(new_hash_table[i].key, "") != 0) {
+				if (new_hash_table[i].key != nullptr) {
 					insert(new_hash_table[i].key, new_hash_table[i].value);
 				}
 			}		

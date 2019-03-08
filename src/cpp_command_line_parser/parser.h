@@ -8,10 +8,15 @@
 
 class ARGS_PARSER {
 friend class Command_Line_Var_Interface;
+public:
+	typedef void (*subcommand_func)(int, char **, void *);
 private:
 	static Hash_Table<Command_Line_Var_Interface> command_line_settings_map;
 	static std::vector<Command_Line_Var_Interface *> list_of_cmd_var;
 	static std::vector<const char *> non_options;
+
+	static Hash_Table<subcommand_func> subcommands_map;
+	static std::vector<subcommand_func> subcommands_list;
 private:
 	static void fill_hash_table(size_t num_unique_flags);
 	static void long_option_handling(char ** argv, int& i);
@@ -21,20 +26,43 @@ private:
 	static void short_option_handling(int argc, char ** argv, int& i);
 	static void multiple_short_options_handling(int argc, char ** argv, int& cur_argument);
 public:
-	static std::vector<const char *> parse(int argc, char ** argv, size_t num_unique_flags = 1000);
+	static subcommand_func add_subcommand(const char * subcommand, subcommand_func sub_func);
+	
+	static std::vector<const char *> parse(int argc, char ** argv, void * data = nullptr, size_t num_unique_flags = 1000);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 //////////////////////////////INLINE DECLARATIONS//////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-inline std::vector<const char *> ARGS_PARSER::parse(int argc, char ** argv, size_t num_unique_flags) {
+inline ARGS_PARSER::subcommand_func ARGS_PARSER::add_subcommand(const char * subcommand, ARGS_PARSER::subcommand_func sub_func) {
+	subcommands_list.push_back(sub_func);
+	subcommands_map.insert(subcommand, &subcommands_list.back());
+	return *sub_func;
+}
+
+inline std::vector<const char *> ARGS_PARSER::parse(int argc, char ** argv, void * data, size_t num_unique_flags) {
 	fill_hash_table(num_unique_flags);
-	non_options.reserve(100);
+	non_options.reserve(2 * argc);
 	int i = 1;
 	for (; i < argc; i++) {
+		// case: subcommand
+		if (subcommands_map.count(argv[i]) != 0) {
+			subcommand_func sub_com = *(subcommands_map[argv[i]]);
+			ARGS_PARSER::subcommands_map.clear();
+			ARGS_PARSER::subcommands_list.clear();
+			ARGS_PARSER::list_of_cmd_var.clear();
+			ARGS_PARSER::command_line_settings_map.clear();
+			non_options.push_back(nullptr);
+			non_options.push_back(argv[i]);
+			if (sub_com == nullptr) {
+				throw std::invalid_argument("sub_com was somehow deleted");
+			}
+			sub_com(argc - i, argv + i, data);
+			return non_options;
+		}
 		// cases: --long-option
-		if (argv[i][2] != '\0' && argv[i][1] == '-' && argv[i][0] == '-') {
+		else if (argv[i][2] != '\0' && argv[i][1] == '-' && argv[i][0] == '-') {
 			long_option_handling(argv, i);
 		// case: -- and all arguments are options
 		} else if (argv[i][0] == '-' && argv[i][1] == '-' && argv[i][2] == '\0') {
@@ -121,6 +149,7 @@ inline void ARGS_PARSER::long_option_handling(char ** argv, int& i) {
 	if (temp_alias[split_location] != '\0') {
 		if (command_line_settings_map[temp_alias]->takes_args()) {
 			command_line_settings_map[temp_alias]->set_base_variable(temp_alias + split_location);
+			temp_alias[split_location - 1] = '=';
 		} else {
 			const int buffer_size = 65;
 			const int start_of_available_section = 32;
@@ -322,6 +351,8 @@ inline void Command_Line_Var<long double>::set_base_variable(const char * b_v) {
 
 std::vector<Command_Line_Var_Interface *> ARGS_PARSER::list_of_cmd_var = std::vector<Command_Line_Var_Interface *>();
 Hash_Table<Command_Line_Var_Interface> ARGS_PARSER::command_line_settings_map = Hash_Table<Command_Line_Var_Interface>(1000);
+Hash_Table<ARGS_PARSER::subcommand_func> ARGS_PARSER::subcommands_map = Hash_Table<subcommand_func>(100);
 std::vector<const char *> ARGS_PARSER::non_options = std::vector<const char *>();
+std::vector<ARGS_PARSER::subcommand_func> ARGS_PARSER::subcommands_list = std::vector<subcommand_func>(100);
 
 #endif
