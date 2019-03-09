@@ -12,7 +12,7 @@ CXX := g++
 LINKER := g++
 INCLUDES := -I$(INCDIR) -I$(INCDIR_EXT)
 LIBRARIES := -L$(LIBDIR)
-CXXFLAGS := -O3 -Wall -Wextra -std=c++11 -MMD -MP
+CXXFLAGS := -O3 -Wall -Wextra -std=c++11 -MMD -MP -ffunction-sections -fdata-sections -flto
 
 # Finds all .cpp files and puts them into SRC
 SRC := $(wildcard $(SRCDIR)/*.cpp)
@@ -30,7 +30,7 @@ $(BINDIR)/$(PRODUCT): directories $(OBJ) $(LIB)
 # 	Make a library
 #	ar rcs $(BINDIR)/$(PRODUCT) $(OBJ) $(LIB)
 #	Make a program
-	$(LINKER) $(CXXFLAGS) $(OBJ) $(LIB) -o $@
+	$(LINKER) -Wl,--gc-sections $(CXXFLAGS) $(OBJ) $(LIB) -o $@
 
 # Compile individual .cpp source files into object files
 $(OBJDIR)/%.o: $(SRCDIR)/%.cpp

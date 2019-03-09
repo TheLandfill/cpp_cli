@@ -13,6 +13,7 @@ While the source code itself is standard c++11, the test program's Makefile uses
 1. [How to Use](#how-to-use)
     1. [Syntax of Use](#syntax-of-use)
 1. [Parsing Rules](#parsing-rules)
+    1. [How Parsing Works With Subcommands](#how-parsing-works-with-subcommands)
     1. [Types the Library Can Handle](#types-the-library-can-handle)
         1. [How to Handle a `char` Array](#how-to-handle-a-char-array)
     1. [Using Order Specific Options](#using-order-specific-options)
@@ -29,6 +30,7 @@ While the source code itself is standard c++11, the test program's Makefile uses
 - In my opinion, current CLI parsers either do far too little, such as GetOpt, or far too much, such as CLI11. Programs should do one thing and do it well. This library takes the data in the command line and puts it into your variables.
 - I wanted to contribute to the open source community and familiarize myself with GitHub.
 - A little bit of [Not Invented Here](https://en.wikipedia.org/wiki/Not_invented_here), to be honest. I still think what I have written is easier to use and much more robust than other libraries, but they likely think the same thing about this library.
+    - After actually using some of the other competitors to test how my library stacks up to theirs, I'm starting to remember more why I made this library.
 
 ## Getting Started
 
@@ -79,6 +81,10 @@ If a `nullptr` is provided for the first argument, the parser will just treat it
 >   - -f = force (don't prompt for confirmation of dangerous actions, just do them)
 
 Note that cpp_args_parser does not force you to use any of the commonly reserved short options at the bottom of the list, nor does it treat them any differently than any other options, nor does it reserve them. It is up to the user to maintain this standard. Furthermore, the special option "-" is treated just like any other option, so it is not reserved for standard input either. Finally, the special argument "--" will turn any arguments that come after it into non-options.
+
+### How Parsing Works With Subcommands
+
+When any word that can be identified as a valid subcommand shows up, the parser will then call that subcommand, add a `nullptr` to the list of non_options, then add the subcommand, and then it will then run the subcommand. Each subcommand has its own totally independent set of flags, but they all share the same non_options. This functionality is modeled after the functionality of the `git` command and its subcommands.
 
 ### Types the Library Can Handle
 As it currently stands, this library can handle standard types that can be converted from a char \*, which include all numeric types, std::string, and char \* (char \* has a slightly different syntax which will be discussed below). To extend the library to handle other types, you need to either add a template specialization, which is what I have done for the numeric types, or overload the "=" operator to take in char \*, which is what std::string has done.
@@ -154,6 +160,8 @@ int main(int argc, char ** argv){
     Command_Line_Var<std::string> standard_input_var(standard_input, { "-" }, false);
     
     Command_Line_Var<char> c_version_of_string_var(c_version_of_string, { "v" }, false, 20);
+
+	// The third argument and the fourth argument aren't necessary to set in this simple example.
     non_options = ARGS_PARSER::parse(argc, argv);
   }
   
@@ -162,16 +170,44 @@ int main(int argc, char ** argv){
 ```
 You can't get much simpler than two lines per variable (half of which are just initializing the variable anyway), but if you want to do more complicated things, you will have to get more complicated.
 
-### Alternatives to Creating `Command_Line_Var`s in a Scope
-As a quick aside, we can consider alternatives to creating `Command_Line_Var`s in a scope and then running `ARGS_PARSER::parse`. No matter what you do, each of the `Command_Line_Var`s must exist while `ARGS_PARSER::parse` is running, as they represent the links between the aliases and the variables and the type conversion they must perform. After the command line has been parsed, they don't matter, and can be deleted without causing any problems.
+## Subcommands
 
-C++ has two ways of allocating memory, and they come with their advantages and disadvantages:
-1. The stack, which has the advantage of cleaning itself up, and possibly being easier for the compiler to optimize given that all the stack allocated variables have a fixed size whose types are known at compile time. Its main drawback, as far as I can tell, is that it requires an individual name for each variable, which is kind of annoying.
-2. The heap, which has the advantage of not needing to explicitly name the variables, as you can just add them to a `std::vector<Command_Line_Var_Interface *>` by using `vector_name.push_back(new Command_Line_Var<char>(...)`, but it suffers from having to clean them up manually and the compiler needing to dynamically allocate space for your program.
+Subcommands are essentially commands embedded inside a single command. The classic example of a command with subcommands is `git`, which has a huge list of subcommands that do completely different things but all use the same functionality of `git`. In this library, each subcommand is treated like a different main function that allows you to pass data from a supercommand into it. Other than the data passed to the subcommand (or data shared by a class if the supercommand and the subcommand have access to the same data), each subcommand is entirely different from the rest of the program, including its supercommand, its subcommands, and any other subcommand, meaning that each subcommand can also have different flags, the same flags, the same flags but referring to different things, etc. Subcommands are declared with the syntax `ARGS_PARSER::add_subcommand("Command Name", subcommand_function)`, where `void subcommand_function(int argc, char ** argv, void * data)` is the style of the subcommand function. It is important to note that each subcommand will treat itself as if it were its own program and completely ignore everything before it on the command line.
 
-These disadvantages aren't significant enough for me to care, so I'm just going with the stack as it is more likely to have a slightly better performance.
+### Subcommands Example
 
-The best way I can think of would be to define a `struct` with all the relevant variables public who had a member function that would have what we currently have as its function body, which will clean up your `main` function significantly. Plus, it's more natural to people who use c++.
+```
+#include "parser.h"
+
+void push_subcommand(int argc, char ** argv, void * data);
+void pull_subcommand(int argc, char ** argv, void * data);
+
+struct Data_From_Principle_Subcommand {
+	std::string file_path;
+	int level;
+};
+
+
+int main(int argc, char ** argv) {
+	Data_For_Push_Subcommand dfps;
+
+	ARGS_PARSER::add_subcommand("push", push_subcommand);
+	ARGS_PARSER::add_subcommand("pull", pull_subcommand);
+	// Other stuff like flags
+	Command_Line_Var<std::string> file_path_var(dfps.file_path, { "p", "path" }, true);
+	Command_Line_Vat<int> level_var(dfps.level, { "l", "level" }, true);
+	
+	// A void pointer to dfps will be passed to any subcommand used.
+	ARGS_PARSER::parse(argc, argv, &dfps, 100);
+}
+
+void push_subcommand(int argc, char ** argv, void * data_ptr) {
+	Data_For_Push_Subcommand data = *((Data_For_Push_Subcommand *)data_ptr);
+	// Do whatever
+}
+
+
+```
 
 ## W_SPECIALIZATION
 
@@ -290,8 +326,7 @@ Note that:
 To specialize the template, you must include the header file `args_parser_templates.h`.
 
 ## Goals
-1. Add subcommands, which are things like `git commit`, where `git` is the main program and `commit` is a subcommand.
-1. See if I can't move `base_variable` from `Command_Line_Var_Interface` to the templated subclass of `Command_Line_Var`, which would really just reduce the typecast.
+1. Add autogenerated help.
 1. Add ability to create a vector of arguments provided to a flag.
 1. Make Windows specific compilation.
     1. Either convert Makefiles to CMake or roll my own Project for Visual Studio.
@@ -300,6 +335,8 @@ To specialize the template, you must include the header file `args_parser_templa
        For example, `--prob=test` will set prob to 0.0, because prob is a double.
     1. Other examples will come up whenever I encounter more errors.
 1. Verify that this code runs on Mac.
+1. See if I can't move `base_variable` from `Command_Line_Var_Interface` to the templated subclass of `Command_Line_Var`, which would really just reduce the typecast.
+    1. Not really a priority.
 1. Add a help message for the test program.
 1. Clean up the test program, specifically by moving all the comments to better locations.
 1. Run more tests, specifically trying to simulate command line response in standard Linux tools.
@@ -307,6 +344,7 @@ To specialize the template, you must include the header file `args_parser_templa
     1. It is not a good idea for me to try to implement all the flags for `gcc`, but it does have a more complex parsing algorithm I could try to simulate at least part of.
     
 ## Goals Completed
+1. Add subcommands, which are things like `git commit`, where `git` is the main program and `commit` is a subcommand.
 1. Add example of template class specialization as specified in the section in test program.
 1. Single `char` arguments work. You could now type something like ```Command_Line_Var<char> single_char_var(single_char, { "A", "a", "B", "b" }, false)``` and it will work.
 1. Fix segmentation fault from having ignored flag in list of flags.
