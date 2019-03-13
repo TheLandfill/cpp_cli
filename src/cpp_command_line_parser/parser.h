@@ -15,51 +15,47 @@ private:
 	static std::vector<Command_Line_Var_Interface *> list_of_cmd_var;
 	static std::vector<const char *> non_options;
 
-	static Hash_Table<subcommand_func> subcommands_map;
-	static std::vector<subcommand_func> subcommands_list;
+	static Hash_Table<subcommand_func> subcommand_map;
+	static std::vector<subcommand_func> subcommand_list;
+	static std::vector<const char *> subcommand_aliases;
+
+	static size_t num_unique_flags;
 private:
-	static void fill_hash_table(size_t num_unique_flags);
+	static void fill_hash_table();
+	static void fill_subcommand_hash_table();
+
+	static void subcommand_handling(int argc, char ** argv, void * data);
+
 	static void long_option_handling(char ** argv, int& i);
 	static int find_and_mark_split_location(char * flag);
-	static void invalid_use_exception_throwing(char * error_message_buffer, const int buffer_size, const int start_of_available_section, const char * offending_flag);
+	static void invalid_use_exception_throwing(char * error_message_buffer, const int buffer_size, const int start_of_edit_section, const char * offending_flag);
 
 	static void short_option_handling(int argc, char ** argv, int& i);
 	static void multiple_short_options_handling(int argc, char ** argv, int& cur_argument);
+
+	static void clear_everything();
+	static void clear_memory();
 public:
-	static subcommand_func add_subcommand(const char * subcommand, subcommand_func sub_func);
+	static void add_subcommand(const char * subcommand, subcommand_func sub_func);
+	static void reserve_space_for_subcommand(size_t number_of_subcommand);
 	
-	static std::vector<const char *> parse(int argc, char ** argv, void * data = nullptr, size_t num_unique_flags = 1000);
+	static std::vector<const char *> parse(int argc, char ** argv, void * data = nullptr);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 //////////////////////////////INLINE DECLARATIONS//////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-inline ARGS_PARSER::subcommand_func ARGS_PARSER::add_subcommand(const char * subcommand, ARGS_PARSER::subcommand_func sub_func) {
-	subcommands_list.push_back(sub_func);
-	subcommands_map.insert(subcommand, &subcommands_list.back());
-	return *sub_func;
-}
-
-inline std::vector<const char *> ARGS_PARSER::parse(int argc, char ** argv, void * data, size_t num_unique_flags) {
-	fill_hash_table(num_unique_flags);
+inline std::vector<const char *> ARGS_PARSER::parse(int argc, char ** argv, void * data) {
+	fill_hash_table();
+	fill_subcommand_hash_table();
 	non_options.reserve(2 * argc);
 	int i = 1;
 	for (; i < argc; i++) {
-		// case: subcommand
-		if (subcommands_map.count(argv[i]) != 0) {
-			subcommand_func sub_com = *(subcommands_map[argv[i]]);
-			ARGS_PARSER::subcommands_map.clear();
-			ARGS_PARSER::subcommands_list.clear();
-			ARGS_PARSER::list_of_cmd_var.clear();
-			ARGS_PARSER::command_line_settings_map.clear();
-			non_options.push_back(nullptr);
-			non_options.push_back(argv[i]);
-			if (sub_com == nullptr) {
-				throw std::invalid_argument("sub_com was somehow deleted");
-			}
-			sub_com(argc - i, argv + i, data);
-			return non_options;
+		// case: subcommand, which is recursive
+		if (subcommand_map.count(argv[i]) != 0) {
+			subcommand_handling(argc - i, argv + i, data);
+			break;
 		}
 		// cases: --long-option
 		else if (argv[i][2] != '\0' && argv[i][1] == '-' && argv[i][0] == '-') {
@@ -67,6 +63,9 @@ inline std::vector<const char *> ARGS_PARSER::parse(int argc, char ** argv, void
 		// case: -- and all arguments are options
 		} else if (argv[i][0] == '-' && argv[i][1] == '-' && argv[i][2] == '\0') {
 			i++;
+			for (; i < argc; i++) {
+				non_options.push_back(argv[i]);
+			}
 			break;
 		// case: -
 		} else if (argv[i][0] == '-' && argv[i][1] == '\0') {
@@ -79,14 +78,11 @@ inline std::vector<const char *> ARGS_PARSER::parse(int argc, char ** argv, void
 			non_options.push_back(argv[i]);
 		}
 	}
-	for (; i < argc; i++) {
-		non_options.push_back(argv[i]);
-	}
-	ARGS_PARSER::list_of_cmd_var.clear();
+	clear_memory();
 	return non_options;
 }
 
-inline void ARGS_PARSER::fill_hash_table(size_t num_unique_flags) {
+inline void ARGS_PARSER::fill_hash_table() {
 	command_line_settings_map = Hash_Table<Command_Line_Var_Interface>(num_unique_flags);
 	Hash_Table<int> flag_already_used(num_unique_flags);
 	for (size_t i = 0; i < ARGS_PARSER::list_of_cmd_var.size(); i++) {
@@ -103,6 +99,60 @@ inline void ARGS_PARSER::fill_hash_table(size_t num_unique_flags) {
 			command_line_settings_map.insert(cur_aliases[j], cur_com_var);
 		}
 	}
+}
+
+inline void ARGS_PARSER::subcommand_handling(int argc, char ** argv, void * data) {
+	subcommand_func sub_com = *(subcommand_map[argv[0]]);
+	clear_everything();
+	non_options.push_back(nullptr);
+	non_options.push_back(argv[0]);
+	sub_com(argc, argv, data);
+}
+
+inline void ARGS_PARSER::reserve_space_for_subcommand(size_t number_of_subcommand) {
+	subcommand_list.reserve(number_of_subcommand);
+	subcommand_aliases.reserve(number_of_subcommand);
+}
+
+inline void ARGS_PARSER::add_subcommand(const char * subcommand, ARGS_PARSER::subcommand_func sub_func) {
+	subcommand_list.push_back(sub_func);
+	subcommand_aliases.push_back(subcommand);
+}
+
+inline void ARGS_PARSER::fill_subcommand_hash_table() {
+	size_t n_sub = subcommand_aliases.size();
+	subcommand_map.reserve(2 * n_sub);
+	Hash_Table<int> flag_already_used(2 * n_sub);
+	for (size_t i = 0; i < n_sub; i++) {
+		if (flag_already_used.count(subcommand_aliases[i])) {
+			const int buffer_size = 58;
+			const int start_of_available_section = 25;
+			char error_message[buffer_size] = "Subcommand already used: \0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
+			invalid_use_exception_throwing(error_message, buffer_size, start_of_available_section, subcommand_aliases[i]);
+		}
+		flag_already_used.insert(subcommand_aliases[i], nullptr);
+		subcommand_map.insert(subcommand_aliases[i], &(subcommand_list[i]));
+	}
+}
+
+inline void ARGS_PARSER::clear_everything() {
+	subcommand_map.clear();
+	subcommand_list.clear();
+	subcommand_aliases.clear();
+	list_of_cmd_var.clear();
+	command_line_settings_map.clear();
+	num_unique_flags = 0;
+	// non_options is never deleted.
+}
+
+inline void ARGS_PARSER::clear_memory() {
+	subcommand_map.clear_memory();
+	command_line_settings_map.clear_memory();
+
+	std::vector<subcommand_func>().swap(subcommand_list);
+	std::vector<const char *>().swap(subcommand_aliases);
+	std::vector<Command_Line_Var_Interface *>().swap(list_of_cmd_var);
+	num_unique_flags = 0;
 }
 
 inline int ARGS_PARSER::find_and_mark_split_location(char * flag) {
@@ -255,6 +305,7 @@ inline void ARGS_PARSER::multiple_short_options_handling(int argc, char ** argv,
 /////////////////////Command_Line_Var_Interface Definitions////////////////////
 
 inline Command_Line_Var_Interface::Command_Line_Var_Interface(void * b_v, std::vector<const char *> a, bool ta) : takes_args_var(ta), base_variable(b_v), aliases(a) {
+	ARGS_PARSER::num_unique_flags += a.size();
 	ARGS_PARSER::list_of_cmd_var.push_back(this);
 }
 
@@ -350,9 +401,13 @@ inline void Command_Line_Var<long double>::set_base_variable(const char * b_v) {
 }
 
 std::vector<Command_Line_Var_Interface *> ARGS_PARSER::list_of_cmd_var = std::vector<Command_Line_Var_Interface *>();
-Hash_Table<Command_Line_Var_Interface> ARGS_PARSER::command_line_settings_map = Hash_Table<Command_Line_Var_Interface>(1000);
-Hash_Table<ARGS_PARSER::subcommand_func> ARGS_PARSER::subcommands_map = Hash_Table<subcommand_func>(100);
+Hash_Table<Command_Line_Var_Interface> ARGS_PARSER::command_line_settings_map = Hash_Table<Command_Line_Var_Interface>(100);
 std::vector<const char *> ARGS_PARSER::non_options = std::vector<const char *>();
-std::vector<ARGS_PARSER::subcommand_func> ARGS_PARSER::subcommands_list = std::vector<subcommand_func>(100);
+
+Hash_Table<ARGS_PARSER::subcommand_func> ARGS_PARSER::subcommand_map = Hash_Table<subcommand_func>(10);
+std::vector<ARGS_PARSER::subcommand_func> ARGS_PARSER::subcommand_list = std::vector<subcommand_func>();
+std::vector<const char *> ARGS_PARSER::subcommand_aliases = std::vector<const char *>();
+
+size_t ARGS_PARSER::num_unique_flags = 0;
 
 #endif

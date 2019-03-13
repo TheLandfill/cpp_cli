@@ -21,7 +21,7 @@ int main(int argc, char ** argv) {
 	ARGS_PARSER::add_subcommand("pull", pull_prog);
 	ARGS_PARSER::add_subcommand("push", push_prog);
 
-	msv.non_options = ARGS_PARSER::parse(argc, argv, &msv, 100);
+	msv.non_options = ARGS_PARSER::parse(argc, argv, &msv);
 	std::cout << "file_path: " << msv.file_path << std::endl;
 	std::cout << "verbosity: " << msv.verbosity << std::endl;
 	
@@ -47,7 +47,7 @@ void push_prog(int argc, char ** argv, void * data) {
 
 	ARGS_PARSER::add_subcommand("test", test_prog);
 	try {
-		ARGS_PARSER::parse(argc, argv, &URL, 100);
+		ARGS_PARSER::parse(argc, argv, &URL);
 	} catch (std::invalid_argument& e) {
 		std::cerr << "INVALID ARGUMENT FOR SUBCOMMAND PUSH" << std::endl;
 		throw e;
@@ -67,7 +67,7 @@ void pull_prog(int argc, char ** argv, void * data) {
 	Command_Line_Var<std::string> URL_var(URL, { "u", "URL" }, true);
 	Command_Line_Var<unsigned long long> timeout_var(timeout, { "t", "timeout" }, true);
 	try {
-		ARGS_PARSER::parse(argc, argv, nullptr, 100);
+		ARGS_PARSER::parse(argc, argv, nullptr);
 	} catch (std::invalid_argument& e) {
 		std::cerr << "INVALID ARGUMENT FOR SUBCOMMAND PULL" << std::endl;
 		throw e;
@@ -89,7 +89,7 @@ void test_prog(int argc, char ** argv, void * data) {
 	Command_Line_Var<int> underwear_count_var(underwear_count, { "u" }, true);
 	Command_Line_Var<double> EURL_var(EURL, { "e", "E", "EURL", "URL" }, true);
 
-	ARGS_PARSER::parse(argc, argv, nullptr, 100);
+	ARGS_PARSER::parse(argc, argv, nullptr);
 
 	std::cout << "underwear_count: " << underwear_count << std::endl;
 	std::cout << "EURL: " << EURL << std::endl;

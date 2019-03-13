@@ -24,7 +24,7 @@ private:
 	static const size_t hash_multiple = 31;
 	std::vector<Hash_Table_Registration<T>> registry_list;
 	size_t num_elements = 0;
-	double load_factor = 0.7;
+	static constexpr double load_factor = 0.9;
 	size_t table_size = 1;
 private:
 	// A nullptr key is an untouched element
@@ -55,12 +55,16 @@ private:
 
 public:
 	Hash_Table(size_t initial_size) {
-		while (table_size < (size_t)(-1) && initial_size > table_size * load_factor) {
+		reserve(initial_size);
+	}
+
+	void reserve(size_t size) {
+		while (table_size < (size_t)(-1) && size > table_size * load_factor) {
 			table_size <<= 1;
 			table_size |= 1;
 		}
 		if (table_size < (size_t)(-1)) {
-			registry_list = std::vector<Hash_Table_Registration<T> >(table_size + 1, Hash_Table_Registration<T>());
+			registry_list = std::vector<Hash_Table_Registration<T> > (table_size + 1, Hash_Table_Registration<T>());
 		} else {
 			throw std::length_error("You are hashing more elements than a vector can hold.");
 		}
@@ -70,6 +74,9 @@ public:
 		size_t location = hash_element(str);
 		if (location == (size_t)(-1)) {
 			return -1;
+		}
+		if (num_elements > load_factor * table_size) {
+			rehash();
 		}
 		short probe_dist = 0;
 		while (registry_list[location].key != nullptr && strcmp(registry_list[location].key, str) != 0) {
@@ -145,6 +152,7 @@ public:
 		for (size_t i = 0; i < registry_list.size(); i++) {
 			registry_list[i].key = nullptr;
 		}
+		num_elements = 0;
 	}
 
 	void rehash() {
@@ -161,6 +169,13 @@ public:
 		} else {
 			throw std::length_error("You are hashing more elements than a vector can hold.");
 		}
+	}
+
+	void clear_memory() {
+		registry_list.clear();
+		std::vector<Hash_Table_Registration<T> >(1, Hash_Table_Registration<T>()).swap(registry_list);
+		table_size = 1;
+		num_elements = 0;
 	}
 };
 
