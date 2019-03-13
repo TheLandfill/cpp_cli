@@ -22,8 +22,8 @@ While the source code itself is standard c++11, the test program's Makefile uses
 1. [More Complex Command Line Parsing](#more-complex-command-line-parsing)
     1. [Subcommands](#subcommands)
 	    1. [Subcommands Example](#subcommands-example)
-    1. [`Command_Line_Value`s](#command-line-values)
-	1. [W_SPECIALIZATION](#w-specialization)
+    1. [`Command_Line_Value`s](#command_line_values)
+	1. [W_SPECIALIZATION](#w_specialization)
         1. [W_SPECIALIZATION Example](#w_specialization-example)
     1. [Adding Your Own Extensions](#adding-your-own-extensions)
 1. [Goals](#goals)
@@ -212,12 +212,11 @@ void push_subcommand(int argc, char ** argv, void * data_ptr) {
 	Data_For_Push_Subcommand data = *((Data_For_Push_Subcommand *)data_ptr);
 	// Do whatever
 }
+```
 
 ### `Command_Line_Value`s
 
 A `Command_Line_Value` has the same syntax as the `Command_Line_Var`, except the third argument is what you want the value to be set to when the flag appears. For instance: `Command_Line_Value<char> some_var(some, { "some", "not-nothing", "s", "less-than-all" }, 's')` will set `some` to `'s'` if any of the flags in the list are found. These are better suited to options that do not take args than `Command_Line_Var`s.
-
-```
 
 ### W_SPECIALIZATION
 
