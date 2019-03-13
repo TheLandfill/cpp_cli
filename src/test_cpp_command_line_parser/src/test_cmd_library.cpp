@@ -10,7 +10,7 @@ int main(int argc, char ** argv) {
 
 	std::string filename = "a.out";
 	int recursion_level = -1;
-	std::string flag = "false";
+	char flag = '\0';
 	std::string flag2 = "false";
 	double probability_of_success = 0.0001;
 	std::string standard_input_hyphen = "";
@@ -68,10 +68,16 @@ int main(int argc, char ** argv) {
 
 		Command_Line_Var<std::string> file_var(filename, { "f", "file", "filename" }, true);
 		Command_Line_Var<int> recursion_var(recursion_level, { "r", "recursion", "max-depth" }, true);
-		Command_Line_Var<std::string> flag_var(flag, { "flag", "a" }, false);
-		Command_Line_Var<std::string> flag2_var(flag2, { "flag2", "b" }, false);
+		Command_Line_Var<std::string> flag2_var(flag2, { "flag2", "d" }, false);
 		Command_Line_Var<double> probability_of_success_var(probability_of_success, { "p", "prob", "probability" }, true);
 		Command_Line_Var<char> verbosity_var(verbosity, { "v" }, false, 20);
+
+		// Command_Line_Value s set the variable to the third argument.
+		// If --flag or -a is passed, flag will be set to 'a'. If --no-flag or
+		// -b is passed, flag will be set to 'b'.
+		Command_Line_Value<char> flag_var0(flag, { "flag", "a" }, 'a');
+		Command_Line_Value<char> flag_var1(flag, { "no-flag", "b" }, 'b');
+		Command_Line_Value<char> flag_var2(flag, { "some-flag", "c" }, 'c');
 
 		// Generally, the solitary hyphen flag is used to indicate that the
 		// program should take in standard input. The library will tell you that
@@ -100,7 +106,7 @@ int main(int argc, char ** argv) {
 	// This section just prints out the values to demonstrate that hash worked.
 	std::cout << "filename:\t" << filename << std::endl;
 	std::cout << "recursion:\t" << recursion_level << std::endl;
-	std::cout << "flag:\t\t" << flag << std::endl;
+	std::cout << "flag:\t\t'" << flag << "'" << std::endl;
 	std::cout << "flag2:\t\t" << flag2 << std::endl;
 	std::cout << "probability_of_success:\t" << probability_of_success << std::endl;
 	std::cout << "standard_input_hyphen:\t" << standard_input_hyphen << std::endl;

@@ -23,6 +23,16 @@ public:
 	virtual void set_base_variable(const char * b_v);
 };
 
+template<typename T>
+class Command_Line_Value : public Command_Line_Var_Interface {
+private:
+	T value;
+public:
+	Command_Line_Value(T & b_v, std::vector<const char *> a, T v);
+	Command_Line_Value(T * b_v, std::vector<const char *> a, T v);
+	virtual void set_base_variable(const char * b_v);
+};
+
 template<>
 class Command_Line_Var<char> : public Command_Line_Var_Interface {
 private:

@@ -16,11 +16,16 @@ While the source code itself is standard c++11, the test program's Makefile uses
     1. [How Parsing Works With Subcommands](#how-parsing-works-with-subcommands)
     1. [Types the Library Can Handle](#types-the-library-can-handle)
         1. [How to Handle a `char` Array](#how-to-handle-a-char-array)
-    1. [Using Order Specific Options](#using-order-specific-options)
+    1. [Using Options Whose Locations Matter](#using-options-whose-locations-matter)
 1. [Exception Throwing](#exception-throwing)
 1. [Example Usage](#example-usage)
-1. [Extensibility to More Complex Command Line Arguments](#extensibility-to-more-complex-command-line-arguments)
-    1. [W_SPECIALIZATION Example](#w_specialization-example)
+1. [More Complex Command Line Parsing](#more-complex-command-line-parsing)
+    1. [Subcommands](#subcommands)
+	    1. [Subcommands Example](#subcommands-example)
+    1. [`Command_Line_Value`s](#command-line-values)
+	1. [W_SPECIALIZATION](#w-specialization)
+        1. [W_SPECIALIZATION Example](#w_specialization-example)
+    1. [Adding Your Own Extensions](#adding-your-own-extensions)
 1. [Goals](#goals)
 1. [Goals Completed](#goals-completed)
 1. [License](#license)
@@ -33,7 +38,6 @@ While the source code itself is standard c++11, the test program's Makefile uses
     - After actually using some of the other competitors to test how my library stacks up to theirs, I'm starting to remember more why I made this library.
 
 ## Getting Started
-
 As it currently stands, the header file will work on all systems, but the test program will have to be compiled using a project on Windows.
 
 ### Prerequisites
@@ -106,6 +110,7 @@ virtual void set_base_variable(const char * b_v) {
     *(T *)base_variable = b_v;
 }
 ```
+
 #### How to Handle a `char` Array
 Instead of creating a `Command_Line_Var<char *>` with the address of the variable containing the char \*, you should create a `Command_Line_Var<char>` with the char \* as its first argument. It also has a fourth argument which sets the buffer size, and so it cannot have a segmentation fault so long as you have allocated more than the buffer size you provide.
 
@@ -125,7 +130,7 @@ Furthermore, you should allocate enough memory to store the longest argument you
 
 Note that `std::string`s do not have this problem, as they manage their own buffer sizes.
 
-If you just want to set a singular `char`, passing it in as a normal variable should work.
+If you just want to set a singular `char`, passing it in as a normal variable works.
 
 ### Using Options Whose Locations Matter
 Without going into too much detail, the `-l` flag in `gcc` and `g++` has to come after other arguments in gcc, but my library destroys the order of options in most cases. To keep a flag in the list of non-options, provide `nullptr` for the first argument in the Command_Line_Var constructor where the address of a variable would normally go. For example:
@@ -170,11 +175,13 @@ int main(int argc, char ** argv){
 ```
 You can't get much simpler than two lines per variable (half of which are just initializing the variable anyway), but if you want to do more complicated things, you will have to get more complicated.
 
-## Subcommands
+## More Complex Command Line Parsing
+
+### Subcommands
 
 Subcommands are essentially commands embedded inside a single command. The classic example of a command with subcommands is `git`, which has a huge list of subcommands that do completely different things but all use the same functionality of `git`. In this library, each subcommand is treated like a different main function that allows you to pass data from a supercommand into it. Other than the data passed to the subcommand (or data shared by a class if the supercommand and the subcommand have access to the same data), each subcommand is entirely different from the rest of the program, including its supercommand, its subcommands, and any other subcommand, meaning that each subcommand can also have different flags, the same flags, the same flags but referring to different things, etc. Subcommands are declared with the syntax `ARGS_PARSER::add_subcommand("Command Name", subcommand_function)`, where `void subcommand_function(int argc, char ** argv, void * data)` is the style of the subcommand function. It is important to note that each subcommand will treat itself as if it were its own program and completely ignore everything before it on the command line.
 
-### Subcommands Example
+#### Subcommands Example
 
 ```
 #include "parser.h"
@@ -206,10 +213,13 @@ void push_subcommand(int argc, char ** argv, void * data_ptr) {
 	// Do whatever
 }
 
+### `Command_Line_Value`s
+
+A `Command_Line_Value` has the same syntax as the `Command_Line_Var`, except the third argument is what you want the value to be set to when the flag appears. For instance: `Command_Line_Value<char> some_var(some, { "some", "not-nothing", "s", "less-than-all" }, 's')` will set `some` to `'s'` if any of the flags in the list are found. These are better suited to options that do not take args than `Command_Line_Var`s.
 
 ```
 
-## W_SPECIALIZATION
+### W_SPECIALIZATION
 
 This is where things get more complicated, though not by as much as you would expect.
 
@@ -219,7 +229,7 @@ I have implemented a general system to handle gcc-style flags called `W_SPECIALI
 
 Unlike a `Command_Line_Var`, `W_VALUE`s and `W_ARG`s prevent you from providing more than one subalias, though you could if you just made multiple `W_VALUE`s or `W_ARGS`.
 
-### W_SPECIALIZATION Example
+#### W_SPECIALIZATION Example
 
 ```
 #include "parser.h"
@@ -285,7 +295,7 @@ int main(int argc, char ** argv){
 ```
 This might look a little daunting, but bear in mind that we're linking somewhere around twenty flags to twelve variables while imposing a superstucture on the flags by using multiple `W_SPECIALIZATION`s. Four of these links come from setting `w_type` alone. It's also now to around three lines per variable, which isn't that much of an increase.
 
-## Extensibility to More Complex Command Line Arguments
+### Adding Your Own Extensions
 You can implement more complex parsing by defining your own class or struct and overriding the template for a `Command_Line_Var` and writing your own version of `set_base_variable`. Below is the template specialization for `char` which allows it to act like a `char *`:
 
 ```

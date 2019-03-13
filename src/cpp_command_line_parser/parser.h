@@ -334,6 +334,20 @@ inline void Command_Line_Var<T>::set_base_variable(const char * b_v) {
 	*(T *)base_variable = b_v;
 }
 
+///////////////////////Command_Line_Value Definitions//////////////////////
+
+template<typename T>
+inline Command_Line_Value<T>::Command_Line_Value(T & b_v, std::vector<const char *>a, T v) : Command_Line_Var_Interface(&b_v, a, false), value(v) {}
+
+template<typename T>
+inline Command_Line_Value<T>::Command_Line_Value(T * b_v, std::vector<const char *>a, T v) : Command_Line_Var_Interface(b_v, a, false), value(v) {}
+
+template<typename T>
+inline void Command_Line_Value<T>::set_base_variable(const char * b_v) {
+	(void)b_v;
+	*(T*)base_variable = value;
+}
+
 ///////////////////////////Template Specializations////////////////////////////
 
 inline Command_Line_Var<char>::Command_Line_Var(char * b_v, std::vector<const char *> a, bool ta, int b_s) : Command_Line_Var_Interface(b_v, a, ta), buffer_size(b_s) {}
