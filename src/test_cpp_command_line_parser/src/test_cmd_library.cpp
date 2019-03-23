@@ -17,12 +17,6 @@ int main(int argc, char ** argv) {
 	char verbosity[20] = "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
 	bool help = false;
 
-	char header[] = "This test program will demonstrate the basic functionality of this library. Other test programs will demonstrate more advances functionality. This is just going to be a really long test header to demonstrate that the function that will break this into lines will work, so I have to add a bunch of unecessary information after the first few sentences so I can make sure that the formatter works.";
-
-	char usage[] = "CMD_PARSER_TEST [options/non-options]\nIt doesn't really matter what you put here since none of the positions matter.";
-
-	char footer[] = "I don't really need to put anything else in here, so I'm just going to leave it as is.";
-
 	// non_options is a vector of args that did not start with a hyphen, did not
 	// start with a double hyphen, or came after the special argument "--".
 	// non_options orders its elements by the same order they came in on the
@@ -34,6 +28,12 @@ int main(int argc, char ** argv) {
 	// scope as when hash is called.
 	{
 
+		char header[] = "This test program will demonstrate the basic functionality of this library. Other test programs will demonstrate more advances functionality. This is just going to be a really long test header to demonstrate that the function that will break this into lines will work, so I have to add a bunch of unecessary information after the first few sentences so I can make sure that the formatter works.";
+
+		char usage[] = "CMD_PARSER_TEST [options/non-options]\nIt doesn't really matter what you put here since none of the positions matter.";
+
+		char footer[] = "I don't really need to put anything else in here, so I'm just going to leave it as is.";
+		
 		ARGS_PARSER::set_header(header);
 		ARGS_PARSER::set_usage(usage);
 		ARGS_PARSER::set_footer(footer);
