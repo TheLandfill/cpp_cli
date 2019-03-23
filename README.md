@@ -1,5 +1,6 @@
 # cpp_cli
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/7f047f6cbe31451f87096d6a64e277fa)](https://www.codacy.com/app/TheLandfill/cpp_cli?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=TheLandfill/cpp_cli&amp;utm_campaign=Badge_Grade)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 This repository consists of a library designed to make parsing command line arguments for c++ easy and efficient and a simple program showing you how it works. While there exist similar libraries such as [GetOpt](https://www.gnu.org/software/libc/manual/html_node/Getopt.html), [commandline](https://archive.codeplex.com/?p=commandline), [CLI11](https://github.com/CLIUtils/CLI11), and [opt](http://www.decompile.com/not_invented_here/opt/), these libraries are either designed with different goals in mind, do far too much, or use weird or complicated syntax. This repository intends to make command line parsing as simple and easy as possible for the user and for the code itself to be easy to read and improve.
 
