@@ -124,7 +124,7 @@ If a `nullptr` is provided for the first argument, the parser will just treat it
 >
 > -   Options can be further divided into short options, which are a single dash followed by a single letter (-r, -f), and long options, which are two dashes followed by one or more dash-separated words (--recursive, --frobnicate-the-gourds). Short options can be glommed together into one argument (-rf) as long as none of them takes arguments (see below).
 >
-> 	  -   Options may themselves take arguments.
+>     -   Options may themselves take arguments.
 >
 >     -   The argument to a short option -x is either the remainder of the argv entry, or if there is no further text in that entry, the very next argv entry whether or not it starts with a dash.
 >
@@ -147,7 +147,6 @@ If a `nullptr` is provided for the first argument, the parser will just treat it
 >     -   -o file = output to file
 >
 >     -   -f = force (don't prompt for confirmation of dangerous actions, just do them)
-
 Note that this library does not force you to use any of the commonly reserved short options at the bottom of the list, nor does it treat them any differently than any other options, nor does it reserve them. It is up to the user to maintain this standard. Furthermore, the special option "-" is treated just like any other option, so it is not reserved for standard input either. Finally, the special argument "--" will turn any arguments that come after it into non-options.
 
 ### How Parsing Works With Subcommands
@@ -209,8 +208,7 @@ Having a `-l` in a group of multiple short arguments such as `-albc` will throw 
 The library will throw exceptions (std::invalid_argument) when you provide a flag on the command line that you did not specify (except for the single hyphen flag for standard input), provide an argument to a flag that does not take arguments, leave out an argument to a flag that does take arguments, or try to use a short option whose location on the command line matters inside a group of short options. When the library throws an argument, it will tell you the error and which flag caused the error. The exception will only print around the first 32 characters of the flag that caused the error.
 
 ## Example Usage
-```
-#include "parser.h"
+```#include "parser.h"
 
 int main(int argc, char ** argv){
   std::string filename = "";
@@ -250,8 +248,7 @@ Subcommands are essentially commands embedded inside a single command. The class
 
 #### Subcommands Example
 
-```
-#include "parser.h"
+```#include "parser.h"
 
 void push_subcommand(int argc, char ** argv, void * data);
 void pull_subcommand(int argc, char ** argv, void * data);
@@ -411,7 +408,7 @@ To specialize the template, you must include the header file `args_parser_templa
     1.  Currently, the program will convert strings into 0 if the argument takes a numeric argument.
         For example, `--prob=test` will set prob to 0.0, because prob is a double.
         
-    1.  Other examples will come up whenever I encounter more errors.
+    2.  Other examples will come up whenever I encounter more errors.
     
 4.  Verify that this code runs on Mac.
 
@@ -453,7 +450,6 @@ To specialize the template, you must include the header file `args_parser_templa
     2.  Due to the nature of the algorithm, it has a one time use so it should only be included once, meaning the hit from making the functions inline shouldn't be any worse than just having the library.
     
     3.  It makes the algorithm easier for the user to include and use.
-    
 9.  Make sure that symlinks work on Windows.
 
 10. Fix response to nonexistant flags. Right now, it just crashes the program with a seg fault. I can either make it ignore them or treat them as non-options.
