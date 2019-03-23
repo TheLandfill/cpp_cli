@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <stdexcept>
 #include <vector>
+#include <cstdio>
 
 class ARGS_PARSER {
 friend class Command_Line_Var_Interface;
@@ -18,8 +19,15 @@ private:
 	static Hash_Table<subcommand_func> subcommand_map;
 	static std::vector<subcommand_func> subcommand_list;
 	static std::vector<const char *> subcommand_aliases;
+	static std::vector<const char *> subcommand_descriptions;
 
 	static size_t num_unique_flags;
+
+	static const char * header;
+	static const char * usage;
+	static const char * footer;
+	static const char * help_file_name;
+	static int help_width;
 private:
 	static void fill_hash_table();
 	static void fill_subcommand_hash_table();
@@ -35,9 +43,21 @@ private:
 
 	static void clear_everything();
 	static void clear_memory();
+
+	static void print_within_length(const char * str, int indent = 0, FILE * file_writer = stdout);
+	static void print_flags();
 public:
-	static void add_subcommand(const char * subcommand, subcommand_func sub_func);
+	static void add_subcommand(const char * subcommand, subcommand_func sub_func, const char * description = "");
 	static void reserve_space_for_subcommand(size_t number_of_subcommand);
+
+	static void set_header(const char * h);
+	static void set_usage(const char * u);
+	static void set_footer(const char * f);
+	static void set_help_width(int hw);
+	static void set_help_file_name(const char * hfn);
+
+	static void generate_help();
+	static void print_help();
 	
 	static std::vector<const char *> parse(int argc, char ** argv, void * data = nullptr);
 };
@@ -54,6 +74,9 @@ inline std::vector<const char *> ARGS_PARSER::parse(int argc, char ** argv, void
 	for (; i < argc; i++) {
 		// case: subcommand, which is recursive
 		if (subcommand_map.count(argv[i]) != 0) {
+			char buffer[1024];
+			sprintf(buffer, ".%s_help_file", argv[i]);
+			set_help_file_name(buffer);
 			subcommand_handling(argc - i, argv + i, data);
 			break;
 		}
@@ -80,6 +103,140 @@ inline std::vector<const char *> ARGS_PARSER::parse(int argc, char ** argv, void
 	}
 	clear_memory();
 	return non_options;
+}
+
+inline void ARGS_PARSER::set_header(const char * h) {
+	header = h;
+}
+
+inline void ARGS_PARSER::set_usage(const char * u) {
+	usage = u;
+}
+
+inline void ARGS_PARSER::set_footer(const char * f) {
+	footer = f;
+}
+
+inline void ARGS_PARSER::set_help_width(int hw) {
+	help_width = hw;
+}
+
+inline void ARGS_PARSER::set_help_file_name(const char * hfn) {
+	help_file_name = hfn;
+}
+
+inline void ARGS_PARSER::generate_help() {
+	FILE * file_exists = fopen(help_file_name, "r");
+	if (file_exists != nullptr) {
+		fclose(file_exists);
+		return;
+	}
+
+	FILE * file_writer = fopen(help_file_name, "w");
+	if (usage[0] != '\0') {
+		print_within_length(usage, 0, file_writer);
+		fprintf(file_writer, "\n");
+	}
+	if (header[0] != '\0') {
+		print_within_length(header, 0, file_writer);
+		fprintf(file_writer, "\n");
+	}
+
+	bool any_descriptive_subcommands = false;
+
+	for (size_t i = 0; !any_descriptive_subcommands && i < subcommand_descriptions.size(); i++) {
+		any_descriptive_subcommands = subcommand_descriptions[i][0] != '`';
+	}
+
+	if (any_descriptive_subcommands) {
+		fprintf(file_writer, "SUBCOMMANDS:\n");
+		for (size_t i = 0; i < subcommand_descriptions.size(); i++) {
+			if (subcommand_descriptions[i][0] != '`') {
+				fprintf(file_writer, "%s\n", subcommand_aliases[i]);
+				print_within_length(subcommand_descriptions[i], 8, file_writer);
+			}
+		}
+		fprintf(file_writer, "\n");
+	}
+
+
+	fprintf(file_writer, "OPTIONS:\n");
+	for (size_t i = 0; i < list_of_cmd_var.size(); i++) {
+		Command_Line_Var_Interface * clv = list_of_cmd_var[i];
+		const std::vector<const char *>& aliases = clv->get_aliases();
+		if (clv->get_help_message()[0] != '`') {
+			for (size_t j = 0; j < aliases.size(); j++) {
+				if (aliases[j][0] == '-' && aliases[j][1] == '\0') {
+					fprintf(file_writer, "-, ");
+				} else if (aliases[j][1] == '\0') {
+					fprintf(file_writer, "-%s, ", aliases[j]);
+				} else {
+					fprintf(file_writer, "--%s, ", aliases[j]);
+				}
+			}
+			fprintf(file_writer, "\b\b  \b\b\n");
+			print_within_length(clv->get_help_message(), 8, file_writer);
+		}
+	}	
+	fprintf(file_writer, "\n");
+	if (footer[0] != '\0') {
+		print_within_length(footer, 0, file_writer);
+	}
+	fclose(file_writer);
+}
+
+inline void ARGS_PARSER::print_help() {
+	FILE * file_reader = fopen(help_file_name, "r");
+	if (file_reader == nullptr) {
+		char error_buffer[1024];
+		sprintf(error_buffer, "%s has not been generated. "
+		"Please put ARGS_PARSER::generate_help() right before calling ARGS_PARSER::parse in the subcommand: ", help_file_name);
+		int i = 1;
+		int offset = strlen(error_buffer);
+		int max_length_of_name = strlen(help_file_name) - strlen("_help_file");
+		while (i < max_length_of_name && help_file_name[i] != '\0') {
+			error_buffer[i - 1 + offset] = help_file_name[i];
+			i++;
+		}
+		error_buffer[i - 1 + offset] = '\0';
+		print_within_length(error_buffer, 0, stderr);
+		return;
+	}
+	char buffer[2048];
+	size_t nread;
+	if (file_reader) {
+		while ((nread = fread(buffer, 1, sizeof buffer, file_reader)) > 0) {
+			fwrite(buffer, 1, nread, stdout);
+		}
+	}
+	fclose(file_reader);
+}
+	
+
+inline void ARGS_PARSER::print_within_length(const char * str, int indent, FILE * file_writer) {
+	int i = 0;
+	int last_position = -1;
+	while (str[i] != '\0') {
+		while (str[i] != '\0' && str[i] != ' ' && str[i] != '\n' && str[i] != '\t') {
+			i++;
+		}
+		while (str[i] != '\0' && i < help_width - indent) {
+			int line_break = -(str[i] == ' ' || str[i] == '\t' || str[i] == '\n');
+			last_position = (i & line_break) | (last_position & ~line_break);
+			if (str[i] == '\n') {
+				break;
+			}
+			i++;
+		}
+
+		if (str[i] == '\0') {
+			fprintf(file_writer, "%*s\n", indent + i, str);
+		} else {
+			fprintf(file_writer, "%*.*s\n", last_position + indent, last_position, str);
+			str += last_position + 1;
+			i = 0;
+		}
+	}
 }
 
 inline void ARGS_PARSER::fill_hash_table() {
@@ -114,9 +271,10 @@ inline void ARGS_PARSER::reserve_space_for_subcommand(size_t number_of_subcomman
 	subcommand_aliases.reserve(number_of_subcommand);
 }
 
-inline void ARGS_PARSER::add_subcommand(const char * subcommand, ARGS_PARSER::subcommand_func sub_func) {
+inline void ARGS_PARSER::add_subcommand(const char * subcommand, ARGS_PARSER::subcommand_func sub_func, const char * description) {
 	subcommand_list.push_back(sub_func);
 	subcommand_aliases.push_back(subcommand);
+	subcommand_descriptions.push_back(description);
 }
 
 inline void ARGS_PARSER::fill_subcommand_hash_table() {
@@ -139,6 +297,7 @@ inline void ARGS_PARSER::clear_everything() {
 	subcommand_map.clear();
 	subcommand_list.clear();
 	subcommand_aliases.clear();
+	subcommand_descriptions.clear();
 	list_of_cmd_var.clear();
 	command_line_settings_map.clear();
 	num_unique_flags = 0;
@@ -152,6 +311,7 @@ inline void ARGS_PARSER::clear_memory() {
 	std::vector<subcommand_func>().swap(subcommand_list);
 	std::vector<const char *>().swap(subcommand_aliases);
 	std::vector<Command_Line_Var_Interface *>().swap(list_of_cmd_var);
+	std::vector<const char *>().swap(subcommand_descriptions);
 	num_unique_flags = 0;
 }
 
@@ -304,7 +464,7 @@ inline void ARGS_PARSER::multiple_short_options_handling(int argc, char ** argv,
 
 /////////////////////Command_Line_Var_Interface Definitions////////////////////
 
-inline Command_Line_Var_Interface::Command_Line_Var_Interface(void * b_v, std::vector<const char *> a, bool ta) : takes_args_var(ta), base_variable(b_v), aliases(a) {
+inline Command_Line_Var_Interface::Command_Line_Var_Interface(void * b_v, std::vector<const char *> a, bool ta, const char * hm) : takes_args_var(ta), base_variable(b_v), aliases(a), help_message(hm) {
 	ARGS_PARSER::num_unique_flags += a.size();
 	ARGS_PARSER::list_of_cmd_var.push_back(this);
 }
@@ -321,13 +481,17 @@ inline bool Command_Line_Var_Interface::ignored() const {
 	return base_variable == nullptr;
 }
 
+inline const char * Command_Line_Var_Interface::get_help_message() const {
+	return help_message;
+}
+
 //////////////////////////Command_Line_Var Definitions/////////////////////////
 
 template<typename T>
-inline Command_Line_Var<T>::Command_Line_Var(T & b_v, std::vector<const char *> a, bool ta) : Command_Line_Var_Interface(&b_v, a, ta) {}
+inline Command_Line_Var<T>::Command_Line_Var(T & b_v, std::vector<const char *> a, bool ta, const char * hm) : Command_Line_Var_Interface(&b_v, a, ta, hm) {}
 
 template<typename T>
-inline Command_Line_Var<T>::Command_Line_Var(T * b_v, std::vector<const char *> a, bool ta) : Command_Line_Var_Interface(b_v, a, ta) {}
+inline Command_Line_Var<T>::Command_Line_Var(T * b_v, std::vector<const char *> a, bool ta, const char * hm) : Command_Line_Var_Interface(b_v, a, ta, hm) {}
 
 template<typename T>
 inline void Command_Line_Var<T>::set_base_variable(const char * b_v) {
@@ -337,10 +501,10 @@ inline void Command_Line_Var<T>::set_base_variable(const char * b_v) {
 ///////////////////////Command_Line_Value Definitions//////////////////////
 
 template<typename T>
-inline Command_Line_Value<T>::Command_Line_Value(T & b_v, std::vector<const char *>a, T v) : Command_Line_Var_Interface(&b_v, a, false), value(v) {}
+inline Command_Line_Value<T>::Command_Line_Value(T & b_v, std::vector<const char *>a, T v, const char * hm) : Command_Line_Var_Interface(&b_v, a, false, hm), value(v) {}
 
 template<typename T>
-inline Command_Line_Value<T>::Command_Line_Value(T * b_v, std::vector<const char *>a, T v) : Command_Line_Var_Interface(b_v, a, false), value(v) {}
+inline Command_Line_Value<T>::Command_Line_Value(T * b_v, std::vector<const char *>a, T v, const char * hm) : Command_Line_Var_Interface(b_v, a, false, hm), value(v) {}
 
 template<typename T>
 inline void Command_Line_Value<T>::set_base_variable(const char * b_v) {
@@ -350,9 +514,9 @@ inline void Command_Line_Value<T>::set_base_variable(const char * b_v) {
 
 ///////////////////////////Template Specializations////////////////////////////
 
-inline Command_Line_Var<char>::Command_Line_Var(char * b_v, std::vector<const char *> a, bool ta, int b_s) : Command_Line_Var_Interface(b_v, a, ta), buffer_size(b_s) {}
+inline Command_Line_Var<char>::Command_Line_Var(char * b_v, std::vector<const char *> a, bool ta, int b_s, const char * hm) : Command_Line_Var_Interface(b_v, a, ta, hm), buffer_size(b_s) {}
 
-inline Command_Line_Var<char>::Command_Line_Var(char & b_v, std::vector<const char *> a, bool ta) : Command_Line_Var_Interface(&b_v, a, ta), buffer_size(1) {}
+inline Command_Line_Var<char>::Command_Line_Var(char & b_v, std::vector<const char *> a, bool ta, const char * hm) : Command_Line_Var_Interface(&b_v, a, ta, hm), buffer_size(1) {}
 
 inline void Command_Line_Var<char>::set_base_variable(const char * b_v) {
 	char * base_variable_string = (char *)base_variable;
@@ -421,7 +585,14 @@ std::vector<const char *> ARGS_PARSER::non_options = std::vector<const char *>()
 Hash_Table<ARGS_PARSER::subcommand_func> ARGS_PARSER::subcommand_map = Hash_Table<subcommand_func>(10);
 std::vector<ARGS_PARSER::subcommand_func> ARGS_PARSER::subcommand_list = std::vector<subcommand_func>();
 std::vector<const char *> ARGS_PARSER::subcommand_aliases = std::vector<const char *>();
+std::vector<const char *> ARGS_PARSER::subcommand_descriptions = std::vector<const char *>();
 
 size_t ARGS_PARSER::num_unique_flags = 0;
+
+const char * ARGS_PARSER::header = "";
+const char * ARGS_PARSER::usage = "";
+const char * ARGS_PARSER::footer = "";
+const char * ARGS_PARSER::help_file_name = ".main_help_file";
+int ARGS_PARSER::help_width = 80;
 
 #endif

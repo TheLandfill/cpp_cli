@@ -15,6 +15,13 @@ int main(int argc, char ** argv) {
 	double probability_of_success = 0.0001;
 	std::string standard_input_hyphen = "";
 	char verbosity[20] = "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
+	bool help = false;
+
+	char header[] = "This test program will demonstrate the basic functionality of this library. Other test programs will demonstrate more advances functionality. This is just going to be a really long test header to demonstrate that the function that will break this into lines will work, so I have to add a bunch of unecessary information after the first few sentences so I can make sure that the formatter works.";
+
+	char usage[] = "CMD_PARSER_TEST [options/non-options]\nIt doesn't really matter what you put here since none of the positions matter.";
+
+	char footer[] = "I don't really need to put anything else in here, so I'm just going to leave it as is.";
 
 	// non_options is a vector of args that did not start with a hyphen, did not
 	// start with a double hyphen, or came after the special argument "--".
@@ -26,6 +33,11 @@ int main(int argc, char ** argv) {
 	// they are no longer necessary. They need to be in accessable in the same
 	// scope as when hash is called.
 	{
+
+		ARGS_PARSER::set_header(header);
+		ARGS_PARSER::set_usage(usage);
+		ARGS_PARSER::set_footer(footer);
+
 
 		// For every variable that you want users to be able to set at the
 		// command line, create an instance of Command_Line_Var, which takes in
@@ -45,13 +57,7 @@ int main(int argc, char ** argv) {
 		// Short options are automatically assigned to single dashes while long
 		// options are assigned to two dashes. Short options can be aglomerated
 		// as long as none of them take arguments. Short options can take
-		// arguments in the forms -aValue or -a Value, but a short option's
-		// argument cannot start with a dash if it is separated by a space. The
-		// syntax -a-Negative_Value is acceptable, but -a -Negative_Value is not.
-		// -Negative_Value will be interpreted as a flag in the second case, and
-		// potentially cause an error as the library will interpret it as either
-		// -N egative_Value or -N -e -g -a, etc. depending on whether every
-		// character is a valid flag or not.
+		// arguments in the forms -aValue or -a Value.
 
 		// The library will first try to break apart single dash arguments into
 		// multiple short options, but if it cannot find an option for every
@@ -66,25 +72,25 @@ int main(int argc, char ** argv) {
 		// will automatically convert from a string to that numeric type.
 		// Negative numbers must be in the format -o-val or --long-option=-val.
 
-		Command_Line_Var<std::string> file_var(filename, { "f", "file", "filename" }, true);
-		Command_Line_Var<int> recursion_var(recursion_level, { "r", "recursion", "max-depth" }, true);
-		Command_Line_Var<std::string> flag2_var(flag2, { "flag2", "d" }, false);
-		Command_Line_Var<double> probability_of_success_var(probability_of_success, { "p", "prob", "probability" }, true);
-		Command_Line_Var<char> verbosity_var(verbosity, { "v" }, false, 20);
+		Command_Line_Var<std::string> file_var(filename, { "f", "file", "filename" }, true, "Determines the file to be read. In this program, though, it doesn't do anything.");
+		Command_Line_Var<int> recursion_var(recursion_level, { "r", "recursion", "max-depth" }, true, "Determines the maximum level of recursion allowed before nothing happens because this is a test program.");
+		Command_Line_Var<std::string> flag2_var(flag2, { "flag2", "d" }, false, "This is just a standard flag variable using some moderately deprecated syntax.");
+		Command_Line_Var<double> probability_of_success_var(probability_of_success, { "p", "prob", "probability" }, true, "Sets the probability of this program working properly, which is mostly dependent on whether or not I forgot a minor syntax error.");
+		Command_Line_Var<char> verbosity_var(verbosity, { "v" }, false, 20, "This is a standard verbosity variable that is supposed to set increasing levels of verbosity, so -v would mean be a little verbose, -vvvv would mean be very verbose, etc.");
 
 		// Command_Line_Value s set the variable to the third argument.
 		// If --flag or -a is passed, flag will be set to 'a'. If --no-flag or
 		// -b is passed, flag will be set to 'b'.
-		Command_Line_Value<char> flag_var0(flag, { "flag", "a" }, 'a');
-		Command_Line_Value<char> flag_var1(flag, { "no-flag", "b" }, 'b');
-		Command_Line_Value<char> flag_var2(flag, { "some-flag", "c" }, 'c');
+		Command_Line_Value<char> flag_var0(flag, { "flag", "a" }, 'a', "This uses the improved Command_Line_Value syntax to make sure that multiple flags set a variable to the same flag. Notice that it is of 'char' type and that flag is not an array.");
+		Command_Line_Value<char> flag_var1(flag, { "no-flag", "b" }, 'b', "Same as --flag, -a, except it will set the flag variable to a different value.");
+		Command_Line_Value<char> flag_var2(flag, { "some-flag", "c" }, 'c', "Same as --flag, -a, except it will set the flag variable to a different value.");
 
 		// Generally, the solitary hyphen flag is used to indicate that the
 		// program should take in standard input. The library will tell you that
 		// someone typed a hyphen, and it is up to you to determine what you
 		// want to do with it. It is not necessary to do anything with it. If
 		// Unless you do something with it, the hyphen will be ignored.
-		Command_Line_Var<std::string> standard_input_hyphen_var(standard_input_hyphen, { "-" }, false);
+		Command_Line_Var<std::string> standard_input_hyphen_var(standard_input_hyphen, { "-" }, false, "This is just a standard input hyphen, which normally means that your program wants to take in user input from stdin. It's only here to demonstrate that this library can parse it.");
 
 		// This will put any argument starting with "-l" or "--library" into
 		// non_options, even though it's still an option, as its order matters.
@@ -92,11 +98,15 @@ int main(int argc, char ** argv) {
 		// have to take template specializations into account, such as char.
 		// You should also set takes_args to be true, or else its position does
 		// not matter.
-		Command_Line_Var<int> ignored_flag_var(nullptr, { "l", "library" }, true);
+		Command_Line_Var<int> ignored_flag_var(nullptr, { "l", "library" }, true, "Flag that corresponds to gcc's -l flag. It is a position dependent flag.");
 
 		// Having the same flag refer to two different Command_Line_Vars will
 		// cause the program to fail and tell you which flag.
 		// Command_Line_Var<int> breaks_program(nullptr, { "l" }, false);
+
+		Command_Line_Value<bool> help_var(help, { "h", "help" }, true, "Prints this help message and exits.");
+
+		ARGS_PARSER::generate_help();
 
 		// Non options must be declared outside the scope unless you don't
 		// need to use them.
@@ -104,15 +114,19 @@ int main(int argc, char ** argv) {
 	}
 
 	// This section just prints out the values to demonstrate that hash worked.
-	std::cout << "filename:\t" << filename << std::endl;
-	std::cout << "recursion:\t" << recursion_level << std::endl;
-	std::cout << "flag:\t\t'" << flag << "'" << std::endl;
-	std::cout << "flag2:\t\t" << flag2 << std::endl;
-	std::cout << "probability_of_success:\t" << probability_of_success << std::endl;
-	std::cout << "standard_input_hyphen:\t" << standard_input_hyphen << std::endl;
-	std::cout << "verbosity:\t" << verbosity << std::endl;
-	for (size_t i = 0; i < non_options.size(); i++) {
-		std::cout << "NON_OPTION " << i << ":\t" << non_options[i] << std::endl;
+	if (help) {
+		ARGS_PARSER::print_help();
+	} else {
+		std::cout << "filename:\t" << filename << std::endl;
+		std::cout << "recursion:\t" << recursion_level << std::endl;
+		std::cout << "flag:\t\t'" << flag << "'" << std::endl;
+		std::cout << "flag2:\t\t" << flag2 << std::endl;
+		std::cout << "probability_of_success:\t" << probability_of_success << std::endl;
+		std::cout << "standard_input_hyphen:\t" << standard_input_hyphen << std::endl;
+		std::cout << "verbosity:\t" << verbosity << std::endl;
+		for (size_t i = 0; i < non_options.size(); i++) {
+			std::cout << "NON_OPTION " << i << ":\t" << non_options[i] << std::endl;
+		}
 	}
 
 	return 0;

@@ -26,7 +26,7 @@ LIB := $(wildcard $(LIBDIR)/lib*.a)
 
 # $^ is list of dependencies and $@ is the target file
 # Link all the object files or make a library
-$(BINDIR)/$(PRODUCT): directories $(OBJ) $(LIB)
+$(BINDIR)/$(PRODUCT): directories $(OBJ) $(LIB) remove_help
 # 	Make a library
 #	ar rcs $(BINDIR)/$(PRODUCT) $(OBJ) $(LIB)
 #	Make a program
@@ -54,4 +54,9 @@ $(OBJDIR):
 .PHONY: clean
 
 clean:
-	rm -f $(OBJDIR)/* $(PRODUCT)
+	rm -f $(OBJDIR)/* $(PRODUCT) $(BINDIR)/.*_help_file
+
+.PHONY: remove_help
+
+remove_help:
+	rm -f $(BINDIR)/.*_help_file

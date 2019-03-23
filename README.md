@@ -49,8 +49,9 @@ No installation required. Just download the [folder](src/cpp_command_line_parser
 ## How to Use
 1. Add the include directory in the project settings or in the Makefile
 1. Include the header file "parser.h" in the main part of your program.
-1. Create a new scope (this is just so the local variables you need to create disappear).
-1. Inside that scope, create a `Command_Line_Var<T>` (syntax specified below).
+1. Create a new scope (this is just so the local variables you need to create disappear, but it's not necessary).
+1. Inside that scope, create your `Command_Line_Var<T>`s, create your `Command_Line_Value<T>`s, add your subcommands, and set help information (syntax specified below).
+1. If you want to generate a help message, run the function `ARGS_PARSER::generate_help()`, which will create a text file with a help message.
 1. Once you've created all the `Command_Line_Var`s, run the function `ARGS_PARSER::parse(argc, argv);`.
 1. All the variables will be set after hash finishes.
 1. Any non-flagged argument or ignored argument will be returned in a vector of "non_options" in the order in which they appear in the command line.
@@ -58,11 +59,29 @@ No installation required. Just download the [folder](src/cpp_command_line_parser
 ### Syntax of Use
 ```
 // WILL WORK IN ALL CASES, INCLUDING FOR Command_Line_Var<char>.
-Command_Line_Var<T> variable_name_var(variable_name, { "flag1", "flag2", "f" }, takes_args);
+Command_Line_Var<T> variable_name_var(variable_name, { "flag1", "flag2", "f" }, takes_args, "Optional help message");
 // DEPRECATED, but will still work for everything except Command_Line_Var<char>. The ampersand doesn't really make a difference otherwise.
-Command_Line_Var<T> variable_name_var(&variable_name, { "flag1", "flag2", "f" }, takes_args);
+Command_Line_Var<T> variable_name_var(&variable_name, { "flag1", "flag2", "f" }, takes_args, "Optional help message");
+
+// Same as the Command_Line_Var, except the third argument is the value you want the variable to be set to
+// if any of the flags are found.
+Command_Line_Value<T> variable_name_var(variable_name, { "flag1", "flag2", "f" }, value, "Optional help message");
+
+// Adds a subcommand, which will run the second argument if name_of_subcommand is found. The second argument is
+// a function with syntax void function_name(int argc, char ** argv, void * data);
+ARGS_PARSER::add_subcommand("name_of_subcommand", subcommand, "Optional help message.");
+
+// The help message will have the usage printed first, then the header, then the subcommands (if any), then the options, then the footer.
+ARGS_PARSER::set_usage("PROGRAM_NAME [options] non-option0 non-option1");
+ARGS_PARSER::set_header("Here is a description of what your program does and so on.");
+ARGS_PARSER::set_footer("For more information, contact us at the.landfill.coding@gmail.com.");
+
+// This will generate the help message and store it in a file.
+ARGS_PARSER::generate_help();
+
+ARGS_PARSER::parse(argc, argv);
 ```
-where `T` is the type of the variable and `variable_name_var` is a stack allocated variable. The first argument is either the variable you want to set, its address (as long as it isn't a `Command_Line_Var<char>`), or a `nullptr`, the second variable is an array/vector of strings corresponding to flags that control the value of the variable, and the third argument is a bool that determines whether or not the flags take arguments themselves.
+where `T` is the type of the variable and `variable_name_var` is a stack allocated variable. The first argument is either the variable you want to set, its address (as long as it isn't a `Command_Line_Var<char>`), or a `nullptr`, the second variable is an array/vector of strings corresponding to flags that control the value of the variable, the third argument is a bool that determines whether or not the flags take arguments themselves, and the last argument is an optional help message. If you don't provide one, the flags will still show up in the help message so that you don't forget about documenting a help message. To have a set of flags ignored, pass in anything starting with a backtick (\`) for the help message.
 
 If a `nullptr` is provided for the first argument, the parser will just treat it as if it were a non-option.
 
@@ -174,6 +193,9 @@ int main(int argc, char ** argv){
 }
 ```
 You can't get much simpler than two lines per variable (half of which are just initializing the variable anyway), but if you want to do more complicated things, you will have to get more complicated.
+
+## Help Message
+This library can automatically generate a help message by calling `ARGS_PARSER::generate_help()`, which will generate a help message and store it in a file within the same directory as the executable named ".X_help_message", where "X" is either the name of the current subcommand or "main" if no subcommand has been called. To print out the current help message, use `ARGS_PARSER::print_help()`, which will print out the last help message of the last subcommand run. It will only generate the help message if there is no help message file corresponding to the current subcommand, meaning you should delete all help message files on compiling. This library has no automatic trigger for a help message, so you'll still need to create a `Command_Line_Value<bool>` for each help message display. You may need to set the filename if you want a help message from a supercommand to be displayed. If `ARGS_PARSER::print_help()` is called without calling `ARGS_PARSER::generate_help()`, the program will print an error message to the stderr detailing which subcommand needs to have the generate_help() added.
 
 ## More Complex Command Line Parsing
 
