@@ -62,7 +62,7 @@ int main(int argc, char ** argv) {
 }
 
 void push_prog(int argc, char ** argv, void * data) {
-	Main_Subcommand_Variables * fixed_data = (Main_Subcommand_Variables*)data;
+	Main_Subcommand_Variables * fixed_data = static_cast<Main_Subcommand_Variables*>(data);
 	std::string URL = "";
 	Command_Line_Var<std::string> URL_var(URL, { "u", "URL" }, true, "Sets the URL.");
 	Command_Line_Value<bool> help_var(help, { "h", "help" }, true, "Displays this help message and exits.");
@@ -73,7 +73,7 @@ void push_prog(int argc, char ** argv, void * data) {
 		ARGS_PARSER::parse(argc, argv, &URL);
 	} catch (std::invalid_argument& e) {
 		std::cerr << "INVALID ARGUMENT FOR SUBCOMMAND PUSH" << std::endl;
-		throw e;
+		throw;
 	}
 
 	if (help) {
@@ -102,7 +102,7 @@ void pull_prog(int argc, char ** argv, void * data) {
 		ARGS_PARSER::parse(argc, argv, nullptr);
 	} catch (std::invalid_argument& e) {
 		std::cerr << "INVALID ARGUMENT FOR SUBCOMMAND PULL" << std::endl;
-		throw e;
+		throw;
 	}
 	
 	if (help) {
