@@ -38,12 +38,12 @@ While the source code itself is standard c++11, the test program's Makefile uses
 
     1.  [Subcommands](#subcommands)
     
-	    1.  [Subcommands Example](#subcommands-example)
+        1.  [Subcommands Example](#subcommands-example)
 	    
     2.  [`Command_Line_Value`s](#command_line_values)
     
-	3.  [W_SPECIALIZATION](#w_specialization)
-	
+    3.  [W_SPECIALIZATION](#w_specialization)
+    
         1.  [W_SPECIALIZATION Example](#w_specialization-example)
 	
     4.  [Adding Your Own Extensions](#adding-your-own-extensions)
@@ -63,7 +63,7 @@ While the source code itself is standard c++11, the test program's Makefile uses
 
 -   A little bit of [Not Invented Here](https://en.wikipedia.org/wiki/Not_invented_here), to be honest. I still think what I have written is easier to use and much more robust than other libraries, but they likely think the same thing about this library.
 
-	-   After actually using some of the other competitors to test how my library stacks up to theirs, I'm starting to remember more why I made this library.
+    -   After actually using some of the other competitors to test how my library stacks up to theirs, I'm starting to remember more why I made this library.
     -   For starters, I don't include half the STL to parse the command line, which keeps executables much smaller than other CLI libraries.	
     -   This library is also way more flexible than most other libraries. It understands that it's only job is organize data on the command line so that it becomes much easier for you to read (and also document itself through the automatic help generation).
 
@@ -119,33 +119,33 @@ If a `nullptr` is provided for the first argument, the parser will just treat it
 [This answer](https://stackoverflow.com/a/14738273/6629221) on stackexchange does a good job of summarizing the standard for command line argument syntax, and the library follows these rules, which are copied below for convenience.
 
 > -   Arguments are divided into options and non-options. Options start with a dash, non-options don't.
-
+>
 > -   Options, as the name implies, are supposed to be optional. If your program requires some command-line arguments to do anything at all useful, those arguments should be non-options (i.e. they should not start with a dash).
-
+>
 > -   Options can be further divided into short options, which are a single dash followed by a single letter (-r, -f), and long options, which are two dashes followed by one or more dash-separated words (--recursive, --frobnicate-the-gourds). Short options can be glommed together into one argument (-rf) as long as none of them takes arguments (see below).
-
+>
 > 	  -   Options may themselves take arguments.
-
+>
 >     -   The argument to a short option -x is either the remainder of the argv entry, or if there is no further text in that entry, the very next argv entry whether or not it starts with a dash.
-
+>
 > -   The argument to a long option is set off with an equals sign: --output=outputfile.txt.
-
+>
 > -   If at all possible, the relative ordering of distinct options (with their arguments) should have no observable effect.
-
+>
 > -   The special option -- means "do not treat anything after this point on the command line as an option, even if it looks like one." This is so, for instance, you can remove a file named '-f' by typing rm -- -f.
-
+>
 > -   The special option - means "read standard input".
-
+>
 > -   There are a number of short option letters reserved by convention: the most important are
-
+>
 >     -   -v = be verbose
-
+>
 >     -   -q = be quiet
-
+>
 >     -   -h = print some help text
-
+>
 >     -   -o file = output to file
-
+>
 >     -   -f = force (don't prompt for confirmation of dangerous actions, just do them)
 
 Note that this library does not force you to use any of the commonly reserved short options at the bottom of the list, nor does it treat them any differently than any other options, nor does it reserve them. It is up to the user to maintain this standard. Furthermore, the special option "-" is treated just like any other option, so it is not reserved for standard input either. Finally, the special argument "--" will turn any arguments that come after it into non-options.
@@ -297,8 +297,7 @@ Unlike a `Command_Line_Var`, `W_VALUE`s and `W_ARG`s prevent you from providing 
 
 #### W_SPECIALIZATION Example
 
-```
-#include "parser.h"
+```#include "parser.h"
 #include "w_specialization.h"
 
 int main(int argc, char ** argv){
@@ -364,8 +363,7 @@ This might look a little daunting, but bear in mind that we're linking somewhere
 ### Adding Your Own Extensions
 You can implement more complex parsing by defining your own class or struct and overriding the template for a `Command_Line_Var` and writing your own version of `set_base_variable`. Below is the template specialization for `char` which allows it to act like a `char *`:
 
-```
-// args_parser_templates.h
+```// args_parser_templates.h
 
 template<>
 class Command_Line_Var<char> : public Command_Line_Var_Interface {
@@ -427,7 +425,7 @@ To specialize the template, you must include the header file `args_parser_templa
 
     1.  `wget` in particular looks perfect for this, with the notable exception of non-standard command-line arguments, such as -nc, which the library would treat as --nc.
     
-    1.  It is not a good idea for me to try to implement all the flags for `gcc`, but it does have a more complex parsing algorithm I could try to simulate at least part of.
+    2.  It is not a good idea for me to try to implement all the flags for `gcc`, but it does have a more complex parsing algorithm I could try to simulate at least part of.
 
 ## Goals Completed
 1.  Add autogenerated help.
