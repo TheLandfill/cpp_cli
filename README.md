@@ -1,4 +1,6 @@
 # cpp_cli
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/7f047f6cbe31451f87096d6a64e277fa)](https://www.codacy.com/app/TheLandfill/cpp_cli?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=TheLandfill/cpp_cli&amp;utm_campaign=Badge_Grade)
+
 This repository consists of a library designed to make parsing command line arguments for c++ easy and efficient and a simple program showing you how it works. While there exist similar libraries such as [GetOpt](https://www.gnu.org/software/libc/manual/html_node/Getopt.html), [commandline](https://archive.codeplex.com/?p=commandline), [CLI11](https://github.com/CLIUtils/CLI11), and [opt](http://www.decompile.com/not_invented_here/opt/), these libraries are either designed with different goals in mind, do far too much, or use weird or complicated syntax. This repository intends to make command line parsing as simple and easy as possible for the user and for the code itself to be easy to read and improve.
 
 Currently, this library is in the beta stage. While it is stable, there are a few improvements that could be made. I'll list these improvements in the section "Goals."
@@ -87,7 +89,7 @@ No installation required. Just download the [folder](src/cpp_command_line_parser
 8.  Any non-flagged argument or ignored argument will be returned in a vector of "non_options" in the order in which they appear in the command line.
 
 ### Syntax of Use
-```
+```cpp
 // WILL WORK IN ALL CASES, INCLUDING FOR Command_Line_Var<char>.
 Command_Line_Var<T> variable_name_var(variable_name, { "flag1", "flag2", "f" }, takes_args, "Optional help message");
 // DEPRECATED, but will still work for everything except Command_Line_Var<char>. The ampersand doesn't really make a difference otherwise.
@@ -138,15 +140,16 @@ If a `nullptr` is provided for the first argument, the parser will just treat it
 >
 > -   There are a number of short option letters reserved by convention: the most important are
 >
->     -   -v = be verbose
+>     -   \-v = be verbose
 >
->     -   -q = be quiet
+>     -   \-q = be quiet
 >
->     -   -h = print some help text
+>     -   \-h = print some help text
 >
->     -   -o file = output to file
+>     -   \-o file = output to file
 >
->     -   -f = force (don't prompt for confirmation of dangerous actions, just do them)
+>     -   \-f = force (don't prompt for confirmation of dangerous actions, just do them)
+
 Note that this library does not force you to use any of the commonly reserved short options at the bottom of the list, nor does it treat them any differently than any other options, nor does it reserve them. It is up to the user to maintain this standard. Furthermore, the special option "-" is treated just like any other option, so it is not reserved for standard input either. Finally, the special argument "--" will turn any arguments that come after it into non-options.
 
 ### How Parsing Works With Subcommands
@@ -161,14 +164,14 @@ This library, however, does not natively support bool types, as it prefers to se
 When using an argument that does not take subarguments, the variable will be set to whatever the subargument is. For instance, if the flag "-s" does not take arguments, it will set its corresponding variable to "s". Likewise, "--stop-early" will set its corresponding variable to "stop-early". If the argument can be stacked (such as -vvvv), then it will set its variable to "vvvv" for up to eleven stacked characters.
 
 The template specialization itself takes the form
-```
+```cpp
 template<>
 void Command_Line_Var<T>::set_base_variable(const char * b_v) {
     // Do stuff
 }
 ```
 while the default template version takes the form
-```
+```cpp
 virtual void set_base_variable(const char * b_v) {
     *(T *)base_variable = b_v;
 }
@@ -177,7 +180,7 @@ virtual void set_base_variable(const char * b_v) {
 #### How to Handle a `char` Array
 Instead of creating a `Command_Line_Var<char *>` with the address of the variable containing the char \*, you should create a `Command_Line_Var<char>` with the char \* as its first argument. It also has a fourth argument which sets the buffer size, and so it cannot have a segmentation fault so long as you have allocated more than the buffer size you provide.
 
-```
+```cpp
 char example_string[20];
 // INVALID: Does not accept char * as a type and the first argument should be a char *, not a char **.
 Command_Line_Var<char *> example_string_var(&example_string, ..., ..., 20);
@@ -197,7 +200,7 @@ If you just want to set a singular `char`, passing it in as a normal variable wo
 
 ### Using Options Whose Locations Matter
 Without going into too much detail, the `-l` flag in `gcc` and `g++` has to come after other arguments in gcc, but my library destroys the order of options in most cases. To keep a flag in the list of non-options, provide `nullptr` for the first argument in the Command_Line_Var constructor where the address of a variable would normally go. For example:
-```
+```cpp
 Command_Line_Var<int> example_ignored_variable(nullptr, { "l", "library"}, true);
 ```
 Any flag that starts with `-l` or `--library` will be considered as if it were a non-option. Note that the templated type was an int in this example, but the type doesn't matter. If you wanted to do a `char`, you would have to provide a fourth argument that would not be used. If you set the third argument to false, it will convert `--library=something` to `--library\0something`, where `\0` is the null terminator, but nothing else will happen.
@@ -208,7 +211,8 @@ Having a `-l` in a group of multiple short arguments such as `-albc` will throw 
 The library will throw exceptions (std::invalid_argument) when you provide a flag on the command line that you did not specify (except for the single hyphen flag for standard input), provide an argument to a flag that does not take arguments, leave out an argument to a flag that does take arguments, or try to use a short option whose location on the command line matters inside a group of short options. When the library throws an argument, it will tell you the error and which flag caused the error. The exception will only print around the first 32 characters of the flag that caused the error.
 
 ## Example Usage
-```#include "parser.h"
+```cpp
+#include "parser.h"
 
 int main(int argc, char ** argv){
   std::string filename = "";
@@ -248,7 +252,8 @@ Subcommands are essentially commands embedded inside a single command. The class
 
 #### Subcommands Example
 
-```#include "parser.h"
+```cpp
+#include "parser.h"
 
 void push_subcommand(int argc, char ** argv, void * data);
 void pull_subcommand(int argc, char ** argv, void * data);
@@ -294,7 +299,8 @@ Unlike a `Command_Line_Var`, `W_VALUE`s and `W_ARG`s prevent you from providing 
 
 #### W_SPECIALIZATION Example
 
-```#include "parser.h"
+```cpp
+#include "parser.h"
 #include "w_specialization.h"
 
 int main(int argc, char ** argv){
@@ -360,7 +366,8 @@ This might look a little daunting, but bear in mind that we're linking somewhere
 ### Adding Your Own Extensions
 You can implement more complex parsing by defining your own class or struct and overriding the template for a `Command_Line_Var` and writing your own version of `set_base_variable`. Below is the template specialization for `char` which allows it to act like a `char *`:
 
-```// args_parser_templates.h
+```cpp
+// args_parser_templates.h
 
 template<>
 class Command_Line_Var<char> : public Command_Line_Var_Interface {
@@ -450,6 +457,7 @@ To specialize the template, you must include the header file `args_parser_templa
     2.  Due to the nature of the algorithm, it has a one time use so it should only be included once, meaning the hit from making the functions inline shouldn't be any worse than just having the library.
     
     3.  It makes the algorithm easier for the user to include and use.
+    
 9.  Make sure that symlinks work on Windows.
 
 10. Fix response to nonexistant flags. Right now, it just crashes the program with a seg fault. I can either make it ignore them or treat them as non-options.
