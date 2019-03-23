@@ -7,38 +7,38 @@ While the source code itself is standard c++11, the test program's Makefile uses
 
 ## Table of Contents
 1.  [Why I Wrote This Library](#why-i-wrote-this-library)
-1.  [Getting Started](#getting-started)
+2.  [Getting Started](#getting-started)
     1.  [Prerequisites](#prerequisites)
-    1.  [Install](#install)
-1.  [How to Use](#how-to-use)
+    2.  [Install](#install)
+3.  [How to Use](#how-to-use)
     1.  [Syntax of Use](#syntax-of-use)
-1.  [Parsing Rules](#parsing-rules)
+4.  [Parsing Rules](#parsing-rules)
     1.  [How Parsing Works With Subcommands](#how-parsing-works-with-subcommands)
-    1.  [Types the Library Can Handle](#types-the-library-can-handle)
+    2.  [Types the Library Can Handle](#types-the-library-can-handle)
         1.  [How to Handle a `char` Array](#how-to-handle-a-char-array)
-    1.  [Using Options Whose Locations Matter](#using-options-whose-locations-matter)
-1.  [Exception Throwing](#exception-throwing)
-1.  [Example Usage](#example-usage)
-1.  [Help Message](#help-message)
-1.  [More Complex Command Line Parsing](#more-complex-command-line-parsing)
+    3.  [Using Options Whose Locations Matter](#using-options-whose-locations-matter)
+5.  [Exception Throwing](#exception-throwing)
+6.  [Example Usage](#example-usage)
+7.  [Help Message](#help-message)
+8.  [More Complex Command Line Parsing](#more-complex-command-line-parsing)
     1.  [Subcommands](#subcommands)
 	    1.  [Subcommands Example](#subcommands-example)
-    1.  [`Command_Line_Value`s](#command_line_values)
+    2.  [`Command_Line_Value`s](#command_line_values)
 	1.  [W_SPECIALIZATION](#w_specialization)
-        1.  [W_SPECIALIZATION Example](#w_specialization-example)
-    1.  [Adding Your Own Extensions](#adding-your-own-extensions)
-1.  [Goals](#goals)
-1.  [Goals Completed](#goals-completed)
-1.  [License](#license)
+        2.  [W_SPECIALIZATION Example](#w_specialization-example)
+    3.  [Adding Your Own Extensions](#adding-your-own-extensions)
+9.  [Goals](#goals)
+10. [Goals Completed](#goals-completed)
+11. [License](#license)
 
 ## Why I Wrote This Library
-- Every non-trivial program has to parse command line arguments, which leaves programmers often writing their own parsers for each individual project even though they are often writing the same inefficient, rigid, and unnecessarily complex algorithms.
-- In my opinion, current CLI parsers either do far too little, such as GetOpt, or far too much, such as CLI11. Programs should do one thing and do it well. This library takes the data in the command line and puts it into your variables.
-- I wanted to contribute to the open source community and familiarize myself with GitHub.
-- A little bit of [Not Invented Here](https://en.wikipedia.org/wiki/Not_invented_here), to be honest. I still think what I have written is easier to use and much more robust than other libraries, but they likely think the same thing about this library.
-    - After actually using some of the other competitors to test how my library stacks up to theirs, I'm starting to remember more why I made this library.
-    - For starters, I don't include half the STL to parse the command line, which keeps executables much smaller than other CLI libraries.
-    - This library is also way more flexible than most other libraries. It understands that it's only job is organize data on the command line so that it becomes much easier for you to read (and also document itself through the automatic help generation).
+-   Every non-trivial program has to parse command line arguments, which leaves programmers often writing their own parsers for each individual project even though they are often writing the same inefficient, rigid, and unnecessarily complex algorithms.
+-   In my opinion, current CLI parsers either do far too little, such as GetOpt, or far too much, such as CLI11. Programs should do one thing and do it well. This library takes the data in the command line and puts it into your variables.
+-   I wanted to contribute to the open source community and familiarize myself with GitHub.
+-   A little bit of [Not Invented Here](https://en.wikipedia.org/wiki/Not_invented_here), to be honest. I still think what I have written is easier to use and much more robust than other libraries, but they likely think the same thing about this library.
+    -   After actually using some of the other competitors to test how my library stacks up to theirs, I'm starting to remember more why I made this library.
+    -   For starters, I don't include half the STL to parse the command line, which keeps executables much smaller than other CLI libraries.
+    -   This library is also way more flexible than most other libraries. It understands that it's only job is organize data on the command line so that it becomes much easier for you to read (and also document itself through the automatic help generation).
 
 ## Getting Started
 As it currently stands, the header file will work on all systems, but the test program will have to be compiled using a project on Windows.
@@ -51,13 +51,13 @@ No installation required. Just download the [folder](src/cpp_command_line_parser
 
 ## How to Use
 1. Add the include directory in the project settings or in the Makefile
-1. Include the header file "parser.h" in the main part of your program.
-1. Create a new scope (this is just so the local variables you need to create disappear, but it's not necessary).
-1. Inside that scope, create your `Command_Line_Var<T>`s, create your `Command_Line_Value<T>`s, add your subcommands, and set help information (syntax specified below).
-1. If you want to generate a help message, run the function `ARGS_PARSER::generate_help()`, which will create a text file with a help message.
-1. Once you've created all the `Command_Line_Var`s, run the function `ARGS_PARSER::parse(argc, argv);`.
-1. All the variables will be set after hash finishes.
-1. Any non-flagged argument or ignored argument will be returned in a vector of "non_options" in the order in which they appear in the command line.
+2. Include the header file "parser.h" in the main part of your program.
+3. Create a new scope (this is just so the local variables you need to create disappear, but it's not necessary).
+4. Inside that scope, create your `Command_Line_Var<T>`s, create your `Command_Line_Value<T>`s, add your subcommands, and set help information (syntax specified below).
+5. If you want to generate a help message, run the function `ARGS_PARSER::generate_help()`, which will create a text file with a help message.
+6. Once you've created all the `Command_Line_Var`s, run the function `ARGS_PARSER::parse(argc, argv);`.
+7. All the variables will be set after hash finishes.
+8. Any non-flagged argument or ignored argument will be returned in a vector of "non_options" in the order in which they appear in the command line.
 
 ### Syntax of Use
 ```
@@ -353,49 +353,49 @@ inilne void Command_Line_Var<char>::set_base_variable(const char * b_v) {
 ```
 
 Note that:
-- The template specialization for `char` extends `public Command_Line_Var_Interface`.
-- It includes a new variable `buffer_size`, which prevents it from going beyond its buffer. Because it has more variables than a `Command_Line_Var_Interface`, it needs to define its own constructor. Normally, if you don't have extra variables or don't need to do anything besides setting variables in the constructor, you don't need to define a constructor.
-- `set_base_variable` is a virtual function takes in a `const char *` and returns `void`. This function must be implemented to make the template specialization behave differently.
+-   The template specialization for `char` extends `public Command_Line_Var_Interface`.
+-   It includes a new variable `buffer_size`, which prevents it from going beyond its buffer. Because it has more variables than a `Command_Line_Var_Interface`, it needs to define its own constructor. Normally, if you don't have extra variables or don't need to do anything besides setting variables in the constructor, you don't need to define a constructor.
+-   `set_base_variable` is a virtual function takes in a `const char *` and returns `void`. This function must be implemented to make the template specialization behave differently.
 
 To specialize the template, you must include the header file `args_parser_templates.h`.
 
 ## Goals
-1. Add ability to create a vector of arguments provided to a flag.
-1. Make Windows specific compilation.
-    1. Either convert Makefiles to CMake or roll my own Project for Visual Studio.
-1. Add helpful error messages.
-    1. Currently, the program will convert strings into 0 if the argument takes a numeric argument.
-       For example, `--prob=test` will set prob to 0.0, because prob is a double.
-    1. Other examples will come up whenever I encounter more errors.
-1. Verify that this code runs on Mac.
-1. See if I can't move `base_variable` from `Command_Line_Var_Interface` to the templated subclass of `Command_Line_Var`, which would really just reduce the typecast.
-    1. Not really a priority.
-1. Clean up the test program, specifically by moving all the comments to better locations.
-1. Run more tests, specifically trying to simulate command line response in standard Linux tools.
-    1. `wget` in particular looks perfect for this, with the notable exception of non-standard command-line arguments, such as -nc, which the library would treat as --nc.
-    1. It is not a good idea for me to try to implement all the flags for `gcc`, but it does have a more complex parsing algorithm I could try to simulate at least part of.
+1.  Add ability to create a vector of arguments provided to a flag.
+2.  Make Windows specific compilation.
+    1.  Either convert Makefiles to CMake or roll my own Project for Visual Studio.
+3.  Add helpful error messages.
+    1.  Currently, the program will convert strings into 0 if the argument takes a numeric argument.
+        For example, `--prob=test` will set prob to 0.0, because prob is a double.
+    1.  Other examples will come up whenever I encounter more errors.
+4.  Verify that this code runs on Mac.
+5.  See if I can't move `base_variable` from `Command_Line_Var_Interface` to the templated subclass of `Command_Line_Var`, which would really just reduce the typecast.
+    1.  Not really a priority.
+6.  Clean up the test program, specifically by moving all the comments to better locations.
+7.  Run more tests, specifically trying to simulate command line response in standard Linux tools.
+    1.  `wget` in particular looks perfect for this, with the notable exception of non-standard command-line arguments, such as -nc, which the library would treat as --nc.
+    1.  It is not a good idea for me to try to implement all the flags for `gcc`, but it does have a more complex parsing algorithm I could try to simulate at least part of.
     
 ## Goals Completed
-1. Add autogenerated help.
-1. Add a help message for the test program.
-    1. Using the autogenerated help, no less.
-1. Add subcommands, which are things like `git commit`, where `git` is the main program and `commit` is a subcommand.
-1. Add example of template class specialization as specified in the section in test program.
-1. Single `char` arguments work. You could now type something like ```Command_Line_Var<char> single_char_var(single_char, { "A", "a", "B", "b" }, false)``` and it will work.
-1. Fix segmentation fault from having ignored flag in list of flags.
-1. Add way to allow user to automatically move flags to non-options by default.
-    1. This is most important when dealing with flags that need to be in order, like gcc's -l library flag.
-1. Convert library to a single file for the user to include.
-    1. Doing so would solve the issue of Windows specific compilation, as it would automatically be taken care of by the compiler.
-    1. Due to the nature of the algorithm, it has a one time use so it should only be included once, meaning the hit from making the functions inline shouldn't be any worse than just having the library.
-    1. It makes the algorithm easier for the user to include and use.
-1. Make sure that symlinks work on Windows.
-1. Fix response to nonexistant flags. Right now, it just crashes the program with a seg fault. I can either make it ignore them or treat them as non-options.
-1. Fix response to providing arguments to options that do not take arguments.
-1. Fix the potential seg fault of writing outside the valid range for `char *`.
-1. Add support for repeated single flags, such as `-vvvv` meaning level four verboseness.
-1. Add helpful error messages for using invalid flags.
-1. Add helpful error messages for providing arguments to flags that do not take arguments.
+1.  Add autogenerated help.
+2.  Add a help message for the test program.
+    1.  Using the autogenerated help, no less.
+3.  Add subcommands, which are things like `git commit`, where `git` is the main program and `commit` is a subcommand.
+4.  Add example of template class specialization as specified in the section in test program.
+5.  Single `char` arguments work. You could now type something like ```Command_Line_Var<char> single_char_var(single_char, { "A", "a", "B", "b" }, false)``` and it will work.
+6.  Fix segmentation fault from having ignored flag in list of flags.
+7.  Add way to allow user to automatically move flags to non-options by default.
+    1.  This is most important when dealing with flags that need to be in order, like gcc's -l library flag.
+8.  Convert library to a single file for the user to include.
+    1.  Doing so would solve the issue of Windows specific compilation, as it would automatically be taken care of by the compiler.
+    2.  Due to the nature of the algorithm, it has a one time use so it should only be included once, meaning the hit from making the functions inline shouldn't be any worse than just having the library.
+    1.  It makes the algorithm easier for the user to include and use.
+9.  Make sure that symlinks work on Windows.
+10. Fix response to nonexistant flags. Right now, it just crashes the program with a seg fault. I can either make it ignore them or treat them as non-options.
+11. Fix response to providing arguments to options that do not take arguments.
+12. Fix the potential seg fault of writing outside the valid range for `char *`.
+13. Add support for repeated single flags, such as `-vvvv` meaning level four verboseness.
+14. Add helpful error messages for using invalid flags.
+15. Add helpful error messages for providing arguments to flags that do not take arguments.
 
 ## License
 This project is licensed under the MIT License - see the LICENSE.md file for details.
