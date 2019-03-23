@@ -6,17 +6,6 @@
 
 int main(int argc, char ** argv) {
 
-	const char * header = "This program will basically show you that this library can emulate gcc's -W flag for multiple variables."
-	" While I'm here, I might as well show you that your compiler will concatenate string literals if you put them in sequence, "
-	"which should make them easier to read, especially if you plan on writing a big long description like what I'm writing right now. The library will also make "
-	"sure all this text is formatted properly within whatever help width you specify. The default is 80 characters, but I've set it to 60 to prove that you can.";
-
-	const char * usage = "USAGE: TEMPLATE_SPECIALIZATION_TEST [options/non-options]\n"
-	"Once again, these test programs don't really have any superstructure to the options/non-options, so I can't really be any more specific.";
-
-	const char * footer = "For more information, contact me at the.landfill.coding@gmail.com or on the github page. You could also put your version information"
-	" stuff here, which would be cool.";
-
 	std::string filename = "a.out";
 	int recursion_level = -1;
 	std::string flag = "false";
@@ -78,6 +67,17 @@ int main(int argc, char ** argv) {
 
 		Command_Line_Value<bool> help_var(help, { "help", "h" }, true, "Displays this help message and exits.");
 
+		const char * header = "This program will basically show you that this library can emulate gcc's -W flag for multiple variables."
+		" While I'm here, I might as well show you that your compiler will concatenate string literals if you put them in sequence, "
+		"which should make them easier to read, especially if you plan on writing a big long description like what I'm writing right now. The library will also make "
+		"sure all this text is formatted properly within whatever help width you specify. The default is 80 characters, but I've set it to 60 to prove that you can.";
+
+		const char * usage = "USAGE: TEMPLATE_SPECIALIZATION_TEST [options/non-options]\n"
+		"Once again, these test programs don't really have any superstructure to the options/non-options, so I can't really be any more specific.";
+
+		const char * footer = "For more information, contact me at the.landfill.coding@gmail.com or on the github page. You could also put your version information"
+		" stuff here, which would be cool.";
+		
 		ARGS_PARSER::set_header(header);
 		ARGS_PARSER::set_usage(usage);
 		ARGS_PARSER::set_footer(footer);
