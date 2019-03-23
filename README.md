@@ -7,38 +7,68 @@ While the source code itself is standard c++11, the test program's Makefile uses
 
 ## Table of Contents
 1.  [Why I Wrote This Library](#why-i-wrote-this-library)
+
 2.  [Getting Started](#getting-started)
+    
     1.  [Prerequisites](#prerequisites)
+    
     2.  [Install](#install)
+    
 3.  [How to Use](#how-to-use)
+
     1.  [Syntax of Use](#syntax-of-use)
+    
 4.  [Parsing Rules](#parsing-rules)
+
     1.  [How Parsing Works With Subcommands](#how-parsing-works-with-subcommands)
+    
     2.  [Types the Library Can Handle](#types-the-library-can-handle)
+    
         1.  [How to Handle a `char` Array](#how-to-handle-a-char-array)
+	
     3.  [Using Options Whose Locations Matter](#using-options-whose-locations-matter)
+    
 5.  [Exception Throwing](#exception-throwing)
+
 6.  [Example Usage](#example-usage)
+
 7.  [Help Message](#help-message)
+
 8.  [More Complex Command Line Parsing](#more-complex-command-line-parsing)
+
     1.  [Subcommands](#subcommands)
-	    1.  [Subcommands Example](#subcommands-example)
-    2.  [`Command_Line_Value`s](#command_line_values)
-	1.  [W_SPECIALIZATION](#w_specialization)
-        2.  [W_SPECIALIZATION Example](#w_specialization-example)
+    
+	    1.	[Subcommands Example](#subcommands-example)
+	    
+    2.	[`Command_Line_Value`s](#command_line_values)
+    
+	1.	[W_SPECIALIZATION](#w_specialization)
+	
+        2.	[W_SPECIALIZATION Example](#w_specialization-example)
+	
     3.  [Adding Your Own Extensions](#adding-your-own-extensions)
+    
 9.  [Goals](#goals)
+
 10. [Goals Completed](#goals-completed)
+
 11. [License](#license)
 
 ## Why I Wrote This Library
 -   Every non-trivial program has to parse command line arguments, which leaves programmers often writing their own parsers for each individual project even though they are often writing the same inefficient, rigid, and unnecessarily complex algorithms.
+
 -   In my opinion, current CLI parsers either do far too little, such as GetOpt, or far too much, such as CLI11. Programs should do one thing and do it well. This library takes the data in the command line and puts it into your variables.
+
 -   I wanted to contribute to the open source community and familiarize myself with GitHub.
+
 -   A little bit of [Not Invented Here](https://en.wikipedia.org/wiki/Not_invented_here), to be honest. I still think what I have written is easier to use and much more robust than other libraries, but they likely think the same thing about this library.
-    -   After actually using some of the other competitors to test how my library stacks up to theirs, I'm starting to remember more why I made this library.
+
+	-   After actually using some of the other competitors to test how my library stacks up to theirs, I'm starting to remember more why I made this library.
+
     -   For starters, I don't include half the STL to parse the command line, which keeps executables much smaller than other CLI libraries.
+	
     -   This library is also way more flexible than most other libraries. It understands that it's only job is organize data on the command line so that it becomes much easier for you to read (and also document itself through the automatic help generation).
+	
 
 ## Getting Started
 As it currently stands, the header file will work on all systems, but the test program will have to be compiled using a project on Windows.
@@ -50,14 +80,14 @@ The library requires nothing but c++11. The test program already has symlinks to
 No installation required. Just download the [folder](src/cpp_command_line_parser/) containing the header files "parser.h", "hash_table.h", and "args_parser_templates.h" and add it to your list of include directories.
 
 ## How to Use
-1. Add the include directory in the project settings or in the Makefile
-2. Include the header file "parser.h" in the main part of your program.
-3. Create a new scope (this is just so the local variables you need to create disappear, but it's not necessary).
-4. Inside that scope, create your `Command_Line_Var<T>`s, create your `Command_Line_Value<T>`s, add your subcommands, and set help information (syntax specified below).
-5. If you want to generate a help message, run the function `ARGS_PARSER::generate_help()`, which will create a text file with a help message.
-6. Once you've created all the `Command_Line_Var`s, run the function `ARGS_PARSER::parse(argc, argv);`.
-7. All the variables will be set after hash finishes.
-8. Any non-flagged argument or ignored argument will be returned in a vector of "non_options" in the order in which they appear in the command line.
+1.	Add the include directory in the project settings or in the Makefile
+2.	Include the header file "parser.h" in the main part of your program.
+3.	Create a new scope (this is just so the local variables you need to create disappear, but it's not necessary).
+4.	Inside that scope, create your `Command_Line_Var<T>`s, create your `Command_Line_Value<T>`s, add your subcommands, and set help information (syntax specified below).
+5.	If you want to generate a help message, run the function `ARGS_PARSER::generate_help()`, which will create a text file with a help message.
+6.	Once you've created all the `Command_Line_Var`s, run the function `ARGS_PARSER::parse(argc, argv);`.
+7.	All the variables will be set after hash finishes.
+8.	Any non-flagged argument or ignored argument will be returned in a vector of "non_options" in the order in which they appear in the command line.
 
 ### Syntax of Use
 ```
@@ -90,21 +120,21 @@ If a `nullptr` is provided for the first argument, the parser will just treat it
 
 ## Parsing Rules
 [This answer](https://stackoverflow.com/a/14738273/6629221) on stackexchange does a good job of summarizing the standard for command line argument syntax, and the library follows these rules, which are copied below for convenience.
-> - Arguments are divided into options and non-options. Options start with a dash, non-options don't.
+> -	Arguments are divided into options and non-options. Options start with a dash, non-options don't.
 > - Options, as the name implies, are supposed to be optional. If your program requires some command-line arguments to do anything at all useful, those arguments should be non-options (i.e. they should not start with a dash).
 > - Options can be further divided into short options, which are a single dash followed by a single letter (-r, -f), and long options, which are two dashes followed by one or more dash-separated words (--recursive, --frobnicate-the-gourds). Short options can be glommed together into one argument (-rf) as long as none of them takes arguments (see below).
->   - Options may themselves take arguments.
->   - The argument to a short option -x is either the remainder of the argv entry, or if there is no further text in that entry, the very next argv entry whether or not it starts with a dash.
+> 	-	Options may themselves take arguments.
+>   -	The argument to a short option -x is either the remainder of the argv entry, or if there is no further text in that entry, the very next argv entry whether or not it starts with a dash.
 > - The argument to a long option is set off with an equals sign: --output=outputfile.txt.
 > - If at all possible, the relative ordering of distinct options (with their arguments) should have no observable effect.
 > - The special option -- means "do not treat anything after this point on the command line as an option, even if it looks like one." This is so, for instance, you can remove a file named '-f' by typing rm -- -f.
 > - The special option - means "read standard input".
 > - There are a number of short option letters reserved by convention: the most important are
->   - -v = be verbose
->   - -q = be quiet
->   - -h = print some help text
->   - -o file = output to file
->   - -f = force (don't prompt for confirmation of dangerous actions, just do them)
+>   -	-v = be verbose
+>   -	-q = be quiet
+>   -	-h = print some help text
+>   -	-o file = output to file
+>   -	-f = force (don't prompt for confirmation of dangerous actions, just do them)
 
 Note that this library does not force you to use any of the commonly reserved short options at the bottom of the list, nor does it treat them any differently than any other options, nor does it reserve them. It is up to the user to maintain this standard. Furthermore, the special option "-" is treated just like any other option, so it is not reserved for standard input either. Finally, the special argument "--" will turn any arguments that come after it into non-options.
 
