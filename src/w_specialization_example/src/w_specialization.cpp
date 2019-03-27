@@ -1,4 +1,4 @@
-#include "parser.h"
+#include "cpp_cli.h"
 #include "w_specialization.h"
 #include <iostream>
 #include <vector>
@@ -38,7 +38,7 @@ int main(int argc, char ** argv) {
 		Command_Line_Var<std::string> flag2_var(flag2, { "flag2", "b" }, false, "Another deprectated example.");
 		Command_Line_Var<double> probability_of_success_var(probability_of_success, { "p", "prob", "probability" }, true, "Determines the probability that this program will work.");
 		Command_Line_Var<char> verbosity_var(verbosity, { "v" }, false, 20, "Dummy variable that corresponds to an option to set the verbosity.");
-		Command_Line_Var<std::string> standard_input_hyphen_var(standard_input_hyphen, { "-" }, false, "Just here to show that the standard input hyphen still works with all the W_specialixation stuff.");
+		Command_Line_Var<std::string> standard_input_hyphen_var(standard_input_hyphen, { "-" }, false, "Just here to show that the standard input hyphen still works with all the W_specialization stuff.");
 		Command_Line_Var<int> ignored_flag_var(nullptr, { "l", "library" }, true, "I copied these from an earlier test program.");
 
 		Command_Line_Var<char> single_char_test_var(single_char_test, { "c", "C", "x", "X" }, false, "This is right here is the main reason I still require you to tell me if the flag takes arguments, as a Command_Line_Value requires one line per variable.");
@@ -72,7 +72,7 @@ int main(int argc, char ** argv) {
 		"which should make them easier to read, especially if you plan on writing a big long description like what I'm writing right now. The library will also make "
 		"sure all this text is formatted properly within whatever help width you specify. The default is 80 characters, but I've set it to 60 to prove that you can.";
 
-		const char * usage = "USAGE: TEMPLATE_SPECIALIZATION_TEST [options/non-options]\n"
+		const char * usage = "[options/non-options]\n\n"
 		"Once again, these test programs don't really have any superstructure to the options/non-options, so I can't really be any more specific.";
 
 		const char * footer = "For more information, contact me at the.landfill.coding@gmail.com or on the github page. You could also put your version information"
@@ -81,9 +81,10 @@ int main(int argc, char ** argv) {
 		ARGS_PARSER::set_header(header);
 		ARGS_PARSER::set_usage(usage);
 		ARGS_PARSER::set_footer(footer);
-		ARGS_PARSER::set_help_width(60);
+		ARGS_PARSER::set_help_width(90);
+		ARGS_PARSER::set_help_file_path("");
 
-		ARGS_PARSER::generate_help();
+		ARGS_PARSER::generate_help(argv[0]);
 
 		non_options = ARGS_PARSER::parse(argc, argv);
 	}

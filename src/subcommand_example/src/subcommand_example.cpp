@@ -1,4 +1,4 @@
-#include "parser.h"
+#include "cpp_cli.h"
 #include <string>
 #include <iostream>
 
@@ -24,8 +24,9 @@ int main(int argc, char ** argv) {
 	ARGS_PARSER::add_subcommand("pull", pull_prog, "Does something like 'git pull' if this program actually did anything.");
 	ARGS_PARSER::add_subcommand("push", push_prog, "Does something like 'git push' if this program actually did anything.");
 
+	ARGS_PARSER::set_help_file_path("/usr/nonlocal/physics/");
 
-	ARGS_PARSER::set_usage("USAGE: SUBCOMMAND_EXAMPLE [options/non-options] [subcommand] [subcommand's options/non-options] [subcommand's subcommand]\n"
+	ARGS_PARSER::set_usage("[options/non-options] [subcommand]\n\t\t[subcommand's options/non-options] [subcommand's subcommand]\n\n"
 	"Since this program kind of uses recursion when dealing with subcommands, the general pattern of [command] [command's options/non-options] [subcommand] is"
 	" repeated, which each subcommand acting like a completely new command with its own options and subcommands.");
 
@@ -39,7 +40,7 @@ int main(int argc, char ** argv) {
 	
 	ARGS_PARSER::set_footer("For more information, contact me at the.landfill.coding@gmail.com or on the github page. You could also put your version information stuff here, which would be cool.");
 
-	ARGS_PARSER::generate_help();
+	ARGS_PARSER::generate_help(argv[0]);
 
 	msv.non_options = ARGS_PARSER::parse(argc, argv, &msv);
 
@@ -68,7 +69,7 @@ void push_prog(int argc, char ** argv, void * data) {
 	Command_Line_Value<bool> help_var(help, { "h", "help" }, true, "Displays this help message and exits.");
 
 	ARGS_PARSER::add_subcommand("test", test_prog);
-	ARGS_PARSER::generate_help();
+	ARGS_PARSER::generate_help(argv[0]);
 	try {
 		ARGS_PARSER::parse(argc, argv, &URL);
 	} catch (std::invalid_argument& e) {
@@ -97,7 +98,7 @@ void pull_prog(int argc, char ** argv, void * data) {
 	Command_Line_Var<std::string> URL_var(URL, { "u", "URL" }, true, "Sets the URL.");
 	Command_Line_Var<unsigned long long> timeout_var(timeout, { "t", "timeout" }, true, "Sets the amount of time before a timeout.");
 	Command_Line_Value<bool> help_var(help, { "h", "help" }, true, "Displays this help message and exits.");
-	ARGS_PARSER::generate_help();
+	ARGS_PARSER::generate_help(argv[0]);
 	try {
 		ARGS_PARSER::parse(argc, argv, nullptr);
 	} catch (std::invalid_argument& e) {
@@ -126,11 +127,11 @@ void test_prog(int argc, char ** argv, void * data) {
 	Command_Line_Var<double> EURL_var(EURL, { "e", "E", "EURL", "URL" }, true, "Sets the value of EURL. Note that '--URL' and '-u' correspond to completely different variables.");
 	Command_Line_Value<bool> help_var(help, { "h", "help" }, true, "Displays this help message and exits.");
 
-	ARGS_PARSER::set_usage("Test.");
+	ARGS_PARSER::set_usage("\n\tTest.");
 
 	ARGS_PARSER::set_header("I'm just changing this to show you that changing any of these help message variables does nothing to any other help message.");
 
-	ARGS_PARSER::generate_help();
+	ARGS_PARSER::generate_help(argv[0]);
 	ARGS_PARSER::parse(argc, argv, nullptr);
 
 	if (help) {

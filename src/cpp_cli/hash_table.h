@@ -16,10 +16,13 @@ struct Hash_Table_Registration {
 	Hash_Table_Registration() : key(nullptr), value(nullptr) {}
 };
 
-// size_t find_next_prime(const size_t initial_guess);
+class Hash_Table_Interface {
+public:
+	virtual int count(const char * str) const = 0;
+};
 
 template<typename T>
-class Hash_Table {
+class Hash_Table : public Hash_Table_Interface {
 private:
 	static const size_t hash_multiple = 31;
 	std::vector<Hash_Table_Registration<T>> registry_list;
@@ -30,7 +33,7 @@ private:
 	// A nullptr key is an untouched element
 	// A "" is a tombstone (MIGHT NOT NEED BECAUSE ROBIN HOOD HASHING)
 	size_t hash_element(const char * str) const {
-		if (strcmp(str, "") == 0) {
+		if (str[0] == '\0') {
 			return (size_t)-1;
 		}
 		size_t hash = 7;
@@ -144,7 +147,7 @@ public:
 		return registry_list[expected_location].value;
 	}
 
-	int count(const char * str) const {
+	int count(const char * str) const override {
 		return registry_list[find_element_beyond_tombstones(str, hash_element(str))].key != nullptr;
 	}
 

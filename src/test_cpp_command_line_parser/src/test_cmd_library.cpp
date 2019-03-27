@@ -1,4 +1,4 @@
-#include "parser.h"
+#include "cpp_cli.h"
 #include <iostream>
 #include <vector>
 #include <string>
@@ -30,13 +30,19 @@ int main(int argc, char ** argv) {
 
 		char header[] = "This test program will demonstrate the basic functionality of this library. Other test programs will demonstrate more advances functionality. This is just going to be a really long test header to demonstrate that the function that will break this into lines will work, so I have to add a bunch of unecessary information after the first few sentences so I can make sure that the formatter works.";
 
-		char usage[] = "CMD_PARSER_TEST [options/non-options]\nIt doesn't really matter what you put here since none of the positions matter.";
+		char usage[] = "[options/non-options]\nIt doesn't really matter what you put here since none of the positions matter.";
 
-		char footer[] = "I don't really need to put anything else in here, so I'm just going to leave it as is.";
+		char footer[] = "For more information, contact me at the.landfill.coding@gmail.com or on the github page. You could also put your version information stuff here, which would be cool.";
 		
 		ARGS_PARSER::set_header(header);
 		ARGS_PARSER::set_usage(usage);
 		ARGS_PARSER::set_footer(footer);
+
+		// The help file path must be set or else the program will throw an
+		// exception. The help file path must also be a valid, writable path.
+		// "" just means current directory. Do not use relative paths unless
+		// you only plan on running it from a single folder.
+		ARGS_PARSER::set_help_file_path("");
 
 
 		// For every variable that you want users to be able to set at the
@@ -106,7 +112,7 @@ int main(int argc, char ** argv) {
 
 		Command_Line_Value<bool> help_var(help, { "h", "help" }, true, "Prints this help message and exits.");
 
-		ARGS_PARSER::generate_help();
+		ARGS_PARSER::generate_help(argv[0]);
 
 		// Non options must be declared outside the scope unless you don't
 		// need to use them.

@@ -64,8 +64,6 @@ While the source code itself is standard c++11, the test program's Makefile uses
 
 -   I wanted to contribute to the open source community and familiarize myself with GitHub.
 
--   A little bit of [Not Invented Here](https://en.wikipedia.org/wiki/Not_invented_here), to be honest. I still think what I have written is easier to use and much more robust than other libraries, but they likely think the same thing about this library.
-
     -   After actually using some of the other competitors to test how my library stacks up to theirs, I'm starting to remember more why I made this library.
     -   For starters, I don't include half the STL to parse the command line, which keeps executables much smaller than other CLI libraries.	
     -   This library is also way more flexible than most other libraries. It understands that it's only job is organize data on the command line so that it becomes much easier for you to read (and also document itself through the automatic help generation).
@@ -77,7 +75,7 @@ As it currently stands, the header file will work on all systems, but the test p
 The library requires nothing but c++11. The test program already has symlinks to the required library and header file.
 
 ### Install
-No installation required. Just download the [folder](src/cpp_command_line_parser/) containing the header files "parser.h", "hash_table.h", and "args_parser_templates.h" and add it to your list of include directories.
+No installation required. Just download the [folder](src/cpp_command_line_parser/) containing the header files "parser.h", "hash_table.h", and "args_parser_templates.h" and add it to your list of included directories.
 
 ## How to Use
 1.  Add the include directory in the project settings or in the Makefile
@@ -243,7 +241,11 @@ int main(int argc, char ** argv){
 You can't get much simpler than two lines per variable (half of which are just initializing the variable anyway), but if you want to do more complicated things, you will have to get more complicated.
 
 ## Help Message
-This library can automatically generate a help message by calling `ARGS_PARSER::generate_help()`, which will generate a help message and store it in a file within the same directory as the executable named ".X_help_message", where "X" is either the name of the current subcommand or "main" if no subcommand has been called. To print out the current help message, use `ARGS_PARSER::print_help()`, which will print out the last help message of the last subcommand run. It will only generate the help message if there is no help message file corresponding to the current subcommand, meaning you should delete all help message files on compiling. This library has no automatic trigger for a help message, so you'll still need to create a `Command_Line_Value<bool>` for each help message display. You may need to set the filename if you want a help message from a supercommand to be displayed. If `ARGS_PARSER::print_help()` is called without calling `ARGS_PARSER::generate_help()`, the program will print an error message to the stderr detailing which subcommand needs to have the generate_help() added.
+This library can automatically generate a help message by calling `ARGS_PARSER::generate_help(argv[0])`, which will generate a help message and store it in a file within the directory you specify named ".X_help_message", where "X" is the name of each subcommand leading up to and including the current subcommand. For instance, if git used this library the command "git push" would produce the file ".git_push_help_message" while just "git" would produce ".git_help_message". To print out the current help message, use `ARGS_PARSER::print_help()`, which will print out the last help message of the last subcommand that called `generate_help(argv[0])`. It will only generate the help message if there is no help message file corresponding to the current subcommand, meaning you should delete all help message files on compiling. This library has no automatic trigger for a help message, so you'll still need to create a `Command_Line_Value<bool>` for each help message display. You may need to set the filename if you want a help message from a supercommand to be displayed. If `ARGS_PARSER::print_help()` is called without calling `ARGS_PARSER::generate_help(argv[0])`, the program will throw a runtime exception detailing which subcommand needs to have the `generate_help(argv[0])` added.
+
+The help file path can either be relative or absolute, but you should only make it relative if you can guarantee that the executable will only be run from one unchanging directory. Otherwise, running it in multiple locations will produce a new hidden help file in each of those new locations. `ARGS_PARSER::set_help_file_path("")` will set the file path to the current directory.
+
+If the help file path you specify does not exist or you do not have permission to create a file in the directory, then the program will throw a runtime exception and notify you of the error. Either rerun the command with the proper privileges, make the directory, or use another directory.
 
 ## More Complex Command Line Parsing
 
@@ -355,8 +357,8 @@ int main(int argc, char ** argv){
     // Also works with regular Command_Line_Vars
     Command_Line_Var<char> regular_c_string_var(regular_c_string, { "f", "file", "filename" }, true, 100);
     Command_Line_Var<unsigned int> redundancy_of_this_README_var(redundancy_of_this_README, { "r", "redundancy" }, true);
-    
     non_options = ARGS_PARSER::parse(argc, argv);
+    
   }
   
   // Other code. At this point, all variables are set.
@@ -405,6 +407,8 @@ Note that:
 To specialize the template, you must include the header file `args_parser_templates.h`.
 
 ## Goals
+1.  Refactor the code so that help file generation is more flexible and its own class so it doesn't clutter up parser.h.
+
 1.  Add ability to create a vector of arguments provided to a flag.
 
 2.  Make Windows specific compilation.
@@ -435,7 +439,7 @@ To specialize the template, you must include the header file `args_parser_templa
 ## Goals Completed
 1.  Add autogenerated help.
 
-2.  Add a help message for the test program.
+2.  Add a help message for the test programs.
 
     1.  Using the autogenerated help, no less.
     

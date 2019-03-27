@@ -27,7 +27,9 @@ private:
 	static const char * usage;
 	static const char * footer;
 	static const char * help_file_name;
+	static const char * help_file_path;
 	static int help_width;
+	static std::vector<const char *> current_command_list;
 private:
 	static void fill_hash_table();
 	static void fill_subcommand_hash_table();
@@ -36,7 +38,7 @@ private:
 
 	static void long_option_handling(char ** argv, int& i);
 	static int find_and_mark_split_location(char * flag);
-	static void invalid_use_exception_throwing(char * error_message_buffer, const int buffer_size, const int start_of_edit_section, const char * offending_flag);
+	static void check_if_option_exists(const char * error_message, const char * flag, const bool exists, const bool should_exist);
 
 	static void short_option_handling(int argc, char ** argv, int& i);
 	static void multiple_short_options_handling(int argc, char ** argv, int& cur_argument);
@@ -45,18 +47,20 @@ private:
 	static void clear_memory();
 
 	static void print_within_length(const char * str, int indent = 0, FILE * file_writer = stdout);
+	static int print_within_length(const char * str, char * buffer, int bf_size, int indent = 0);
 	static void print_flags();
 public:
 	static void add_subcommand(const char * subcommand, subcommand_func sub_func, const char * description = "");
 	static void reserve_space_for_subcommand(size_t number_of_subcommand);
 
-	static void set_header(const char * h);
 	static void set_usage(const char * u);
+	static void set_header(const char * h);
 	static void set_footer(const char * f);
 	static void set_help_width(int hw);
 	static void set_help_file_name(const char * hfn);
+	static void set_help_file_path(const char * hfp);
 
-	static void generate_help();
+	static void generate_help(const char * command_name);
 	static void print_help();
 	
 	static std::vector<const char *> parse(int argc, char ** argv, void * data = nullptr);
@@ -74,9 +78,6 @@ inline std::vector<const char *> ARGS_PARSER::parse(int argc, char ** argv, void
 	for (; i < argc; i++) {
 		// case: subcommand, which is recursive
 		if (subcommand_map.count(argv[i]) != 0) {
-			char buffer[1024];
-			sprintf(buffer, ".%s_help_file", argv[i]);
-			set_help_file_name(buffer);
 			subcommand_handling(argc - i, argv + i, data);
 			break;
 		}
@@ -91,10 +92,8 @@ inline std::vector<const char *> ARGS_PARSER::parse(int argc, char ** argv, void
 			}
 			break;
 		// case: -
-		} else if (argv[i][0] == '-' && argv[i][1] == '\0') {
-			if (command_line_settings_map.count("-") != 0) {
-				command_line_settings_map["-"]->set_base_variable("-");
-			}
+		} else if (argv[i][0] == '-' && argv[i][1] == '\0' && command_line_settings_map.count("-") != 0) {
+			command_line_settings_map["-"]->set_base_variable("-");
 		} else if (argv[i][0] == '-') {
 			short_option_handling(argc, argv, i);
 		} else {
@@ -125,7 +124,31 @@ inline void ARGS_PARSER::set_help_file_name(const char * hfn) {
 	help_file_name = hfn;
 }
 
-inline void ARGS_PARSER::generate_help() {
+inline void ARGS_PARSER::set_help_file_path(const char * hfp) {
+	help_file_path = hfp;
+}
+
+inline void ARGS_PARSER::generate_help(const char * subcommand_name) {
+	if (subcommand_name[0] == '.' && subcommand_name[1] == '/') {
+		subcommand_name += 2;
+	}
+	current_command_list.push_back(subcommand_name);
+	char buffer[2048];
+	char * buffer_index = buffer;
+	if (help_file_path == nullptr) {
+		print_within_length("The help file path has not been set. "
+		"Use the command 'ARGS_PARSER::set_help_file_path(const char * hfn)' to set a valid file path before calling generate_help. "
+		"The file path should be an absolute path if you want the program to run anywhere. "
+		"Only use a relative path if your executable can only be executed from one spot.", buffer, 2048);
+		throw std::runtime_error(buffer);
+	}
+	buffer_index += sprintf(buffer_index, "%s.", help_file_path);
+	for (size_t i = 0; i < current_command_list.size(); i++) {
+		buffer_index += sprintf(buffer_index, "%s_", current_command_list[i]);
+	}
+	sprintf(buffer_index, "help_file");
+	set_help_file_name(buffer);
+
 	FILE * file_exists = fopen(help_file_name, "r");
 	if (file_exists != nullptr) {
 		fclose(file_exists);
@@ -133,22 +156,30 @@ inline void ARGS_PARSER::generate_help() {
 	}
 
 	FILE * file_writer = fopen(help_file_name, "w");
-	if (usage[0] != '\0') {
-		print_within_length(usage, 0, file_writer);
-		fprintf(file_writer, "\n");
-	}
-	if (header[0] != '\0') {
-		print_within_length(header, 0, file_writer);
-		fprintf(file_writer, "\n");
+	if (file_writer == nullptr) {
+		char error_message_buffer[1024];
+		sprintf(error_message_buffer, "%s must exist and be accessable by the current user.", help_file_path);
+		throw std::runtime_error(error_message_buffer);
 	}
 
-	bool any_descriptive_subcommands = false;
+	char usage_buffer[2048];
+	char * usage_buffer_index = usage_buffer;
+	usage_buffer_index += sprintf(usage_buffer_index, "%s", "usage:");
+	for (size_t i = 0; i < current_command_list.size(); i++) {
+		usage_buffer_index += sprintf(usage_buffer_index, " %s", current_command_list[i]);
+	}
+	sprintf(usage_buffer_index, " %s", usage);
 
-	for (size_t i = 0; !any_descriptive_subcommands && i < subcommand_descriptions.size(); i++) {
-		any_descriptive_subcommands = subcommand_descriptions[i][0] != '`';
+	print_within_length(usage_buffer, 0, file_writer);
+	print_within_length(header, 0, file_writer);
+
+	bool any_descriptions = false;
+
+	for (size_t i = 0; !any_descriptions && i < subcommand_descriptions.size(); i++) {
+		any_descriptions = subcommand_descriptions[i][0] != '`';
 	}
 
-	if (any_descriptive_subcommands) {
+	if (any_descriptions) {
 		fprintf(file_writer, "SUBCOMMANDS:\n");
 		for (size_t i = 0; i < subcommand_descriptions.size(); i++) {
 			if (subcommand_descriptions[i][0] != '`') {
@@ -161,46 +192,45 @@ inline void ARGS_PARSER::generate_help() {
 
 
 	fprintf(file_writer, "OPTIONS:\n");
+	char help_buffer[2048];
 	for (size_t i = 0; i < list_of_cmd_var.size(); i++) {
 		Command_Line_Var_Interface * clv = list_of_cmd_var[i];
-		const std::vector<const char *>& aliases = clv->get_aliases();
+		const std::vector<const char *>& a = clv->get_aliases();
 		if (clv->get_help_message()[0] != '`') {
-			for (size_t j = 0; j < aliases.size(); j++) {
-				if (aliases[j][0] == '-' && aliases[j][1] == '\0') {
-					fprintf(file_writer, "-, ");
-				} else if (aliases[j][1] == '\0') {
-					fprintf(file_writer, "-%s, ", aliases[j]);
-				} else {
-					fprintf(file_writer, "--%s, ", aliases[j]);
-				}
+			int len_str = 0;
+			const char * n_dash = "--";
+			for (size_t j = 0; j < a.size(); j++) {
+				int added = sprintf(help_buffer + len_str, "%s%s, ", n_dash + (a[j][1] == '\0') * (1 + (a[j][0] == '-')), a[j]);
+				len_str += added;
 			}
-			fprintf(file_writer, "\b\b  \b\b\n");
+			help_buffer[len_str - 2] = '\0';
+
+			fprintf(file_writer, "%s\n", help_buffer);
 			print_within_length(clv->get_help_message(), 8, file_writer);
 		}
 	}	
 	fprintf(file_writer, "\n");
-	if (footer[0] != '\0') {
-		print_within_length(footer, 0, file_writer);
-	}
+	print_within_length(footer, 0, file_writer);
 	fclose(file_writer);
 }
 
 inline void ARGS_PARSER::print_help() {
 	FILE * file_reader = fopen(help_file_name, "r");
 	if (file_reader == nullptr) {
-		char error_buffer[1024];
-		sprintf(error_buffer, "%s has not been generated. "
+		char error_message[1024];
+		sprintf(error_message, "%s has not been generated. "
 		"Please put ARGS_PARSER::generate_help() right before calling ARGS_PARSER::parse in the subcommand: ", help_file_name);
 		int i = 1;
-		int offset = strlen(error_buffer);
+		int offset = strlen(error_message);
 		int max_length_of_name = strlen(help_file_name) - strlen("_help_file");
 		while (i < max_length_of_name && help_file_name[i] != '\0') {
-			error_buffer[i - 1 + offset] = help_file_name[i];
+			error_message[i - 1 + offset] = help_file_name[i];
 			i++;
 		}
-		error_buffer[i - 1 + offset] = '\0';
-		print_within_length(error_buffer, 0, stderr);
-		return;
+		error_message[i - 1 + offset] = '\0';
+		char error_buffer[2048];
+		print_within_length(error_message, error_buffer, 2048);
+		throw std::runtime_error(error_buffer);
 	}
 	char buffer[2048];
 	size_t nread;
@@ -211,12 +241,12 @@ inline void ARGS_PARSER::print_help() {
 	}
 	fclose(file_reader);
 }
-	
 
-inline void ARGS_PARSER::print_within_length(const char * str, int indent, FILE * file_writer) {
+inline int ARGS_PARSER::print_within_length(const char * str, char * buffer, int bf_size, int indent) {
 	int i = 0;
 	int last_position = -1;
-	while (str[i] != '\0') {
+	const char * initial_str = str;
+	while (str[i] != '\0' && str - initial_str < bf_size - help_width - 1) {
 		while (str[i] != '\0' && str[i] != ' ' && str[i] != '\n' && str[i] != '\t') {
 			i++;
 		}
@@ -230,12 +260,27 @@ inline void ARGS_PARSER::print_within_length(const char * str, int indent, FILE 
 		}
 
 		if (str[i] == '\0') {
-			fprintf(file_writer, "%*s\n", indent + i, str);
+			buffer += sprintf(buffer, "%*s\n", indent + i, str);
+			str += i;
 		} else {
-			fprintf(file_writer, "%*.*s\n", last_position + indent, last_position, str);
+			buffer += sprintf(buffer, "%*.*s\n", last_position + indent, last_position, str);
 			str += last_position + 1;
-			i = 0;
 		}
+		i = 0;
+	}
+	return str - initial_str;
+}
+
+inline void ARGS_PARSER::print_within_length(const char * str, int indent, FILE * file_writer) {
+	const int bf_size = 2048;
+	char buffer[bf_size];
+	const char * i_str = str;
+	while (str[0] != '\0') {
+		str += print_within_length(str, buffer, bf_size, indent);
+		fprintf(file_writer, "%s", buffer);
+	}
+	if (i_str[0] != '\0') {
+		fprintf(file_writer, "\n");
 	}
 }
 
@@ -246,12 +291,7 @@ inline void ARGS_PARSER::fill_hash_table() {
 		Command_Line_Var_Interface * cur_com_var = list_of_cmd_var[i];
 		const std::vector<const char *> & cur_aliases = cur_com_var->get_aliases();
 		for (size_t j = 0; j < cur_aliases.size(); j++) {
-			if (flag_already_used.count(cur_aliases[j])) {
-				const int buffer_size = 52;
-				const int start_of_available_section = 19;
-				char error_message[buffer_size] = "Flag already used: \0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
-				invalid_use_exception_throwing(error_message, buffer_size, start_of_available_section, cur_aliases[j]);
-			}
+			check_if_option_exists("Flag already used: ", cur_aliases[j], flag_already_used.count(cur_aliases[j]), false);
 			flag_already_used.insert(cur_aliases[j], nullptr);
 			command_line_settings_map.insert(cur_aliases[j], cur_com_var);
 		}
@@ -282,12 +322,7 @@ inline void ARGS_PARSER::fill_subcommand_hash_table() {
 	subcommand_map.reserve(2 * n_sub);
 	Hash_Table<int> flag_already_used(2 * n_sub);
 	for (size_t i = 0; i < n_sub; i++) {
-		if (flag_already_used.count(subcommand_aliases[i])) {
-			const int buffer_size = 58;
-			const int start_of_available_section = 25;
-			char error_message[buffer_size] = "Subcommand already used: \0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
-			invalid_use_exception_throwing(error_message, buffer_size, start_of_available_section, subcommand_aliases[i]);
-		}
+		check_if_option_exists("Subcommand already used: ", subcommand_aliases[i], flag_already_used.count(subcommand_aliases[i]), false);
 		flag_already_used.insert(subcommand_aliases[i], nullptr);
 		subcommand_map.insert(subcommand_aliases[i], &(subcommand_list[i]));
 	}
@@ -327,25 +362,19 @@ inline int ARGS_PARSER::find_and_mark_split_location(char * flag) {
 	return split_location;
 }
 
-inline void ARGS_PARSER::invalid_use_exception_throwing(char * error_message_buffer, const int buffer_size, const int start_of_available_section, const char * offending_flag) {
-	int error_message_iterator = start_of_available_section;
-	while (error_message_iterator < buffer_size - 1 && offending_flag[error_message_iterator - start_of_available_section] != '\0') {
-		error_message_buffer[error_message_iterator] = offending_flag[error_message_iterator - start_of_available_section];
-		error_message_iterator++;
+inline void ARGS_PARSER::check_if_option_exists(const char * error_message, const char * potential_option, const bool exists, const bool should_exist) {
+	char error_message_buffer[1024];
+	if (exists != should_exist) {
+		sprintf(error_message_buffer, "%s%s", error_message, potential_option);
+		throw std::invalid_argument(error_message_buffer);
 	}
-	throw std::invalid_argument(error_message_buffer);
 }
 
 inline void ARGS_PARSER::long_option_handling(char ** argv, int& i) {
 	char * temp_alias = argv[i] + 2;
 	int split_location = find_and_mark_split_location(temp_alias);
 
-	if (command_line_settings_map.count(temp_alias) == 0) {
-		const int buffer_size = 54;
-		const int start_of_available_section = 21;
-		char error_message[buffer_size] = "Unrecognized Option: \0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
-		invalid_use_exception_throwing(error_message, buffer_size, start_of_available_section, temp_alias);
-	}
+	check_if_option_exists("Unrecognized Option: --", temp_alias, command_line_settings_map.count(temp_alias), true);
 
 	if (command_line_settings_map[temp_alias]->ignored()) {
 		if (command_line_settings_map[temp_alias]->takes_args()) {
@@ -361,17 +390,15 @@ inline void ARGS_PARSER::long_option_handling(char ** argv, int& i) {
 			command_line_settings_map[temp_alias]->set_base_variable(temp_alias + split_location);
 			temp_alias[split_location - 1] = '=';
 		} else {
-			const int buffer_size = 65;
-			const int start_of_available_section = 32;
-			char error_message[buffer_size] = "Option does not take arguments: \0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
-			invalid_use_exception_throwing(error_message, buffer_size, start_of_available_section, temp_alias);
+			char error_message_buffer[1024];
+			sprintf(error_message_buffer, "%s%s", "Option does not take arguments: --", temp_alias);
+			throw std::invalid_argument(error_message_buffer);
 		}
 	// case: --long-option
 	} else if (command_line_settings_map[temp_alias]->takes_args()) {
-		const int buffer_size = 60;
-		const int start_of_available_section = 27;
-		char error_message[buffer_size] = "Option requires arguments: \0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
-		invalid_use_exception_throwing(error_message, buffer_size, start_of_available_section, temp_alias);
+		char error_message_buffer[1024];
+		sprintf(error_message_buffer, "%s%s", "Option requires arguments: --", temp_alias);
+		throw std::invalid_argument(error_message_buffer);
 	} else {
 		command_line_settings_map[temp_alias]->set_base_variable(temp_alias);
 	}
@@ -380,18 +407,16 @@ inline void ARGS_PARSER::long_option_handling(char ** argv, int& i) {
 inline void ARGS_PARSER::short_option_handling(int argc, char ** argv, int& i) {
 	char temp_alias[2] = "\0";
 	temp_alias[0] = argv[i][1];
-	if (command_line_settings_map.count(temp_alias) == 0) {
-		char error_message[] = "Unrecognized Option: \0";
-		error_message[21] = argv[i][1];
-		throw std::invalid_argument(error_message);
-	}
+
+	check_if_option_exists("Unrecognized Option: -", temp_alias, command_line_settings_map.count(temp_alias), true);
 
 	if (command_line_settings_map[temp_alias]->ignored()) {
 		non_options.push_back(argv[i]);
 		return;
 	}
-	// case: -o value
-	if (argv[i][2] == '\0' && i + 1 < argc && command_line_settings_map.count(argv[i] + 1) != 0 && command_line_settings_map[argv[i] + 1]->takes_args()) {
+
+	// case: -o value // -o already exists because we checked for it initally.
+	if (argv[i][2] == '\0' && i + 1 < argc && command_line_settings_map[argv[i] + 1]->takes_args()) {
 		command_line_settings_map[argv[i] + 1]->set_base_variable(argv[i + 1]);
 		i++;
 		return;
@@ -434,11 +459,9 @@ inline void ARGS_PARSER::multiple_short_options_handling(int argc, char ** argv,
 	// case -abc
 	while (flag[i] != '\0') {
 		temp_alias[0] = flag[i];
-		if (command_line_settings_map.count(temp_alias) == 0) {
-			char error_message[] = "Unrecognized Option: \0";
-			error_message[21] = argv[i][1];
-			throw std::invalid_argument(error_message);
-		}
+
+		check_if_option_exists("Unrecognized Option: -", temp_alias, command_line_settings_map.count(temp_alias), true);
+
 		if (command_line_settings_map[temp_alias]->ignored()) {
 			char error_message[] = "Order of \"-\0\" matters, so it cannot be part of multiple short arguments.";
 			error_message[11] = flag[i];
@@ -593,6 +616,8 @@ const char * ARGS_PARSER::header = "";
 const char * ARGS_PARSER::usage = "";
 const char * ARGS_PARSER::footer = "";
 const char * ARGS_PARSER::help_file_name = ".main_help_file";
+const char * ARGS_PARSER::help_file_path = nullptr;
 int ARGS_PARSER::help_width = 80;
+std::vector<const char *> ARGS_PARSER::current_command_list = std::vector<const char *>();
 
 #endif
