@@ -409,28 +409,28 @@ To specialize the template, you must include the header file `args_parser_templa
 ## Goals
 1.  Refactor the code so that help file generation is more flexible and its own class so it doesn't clutter up parser.h.
 
-1.  Add ability to create a vector of arguments provided to a flag.
+2.  Add ability to create a vector of arguments provided to a flag.
 
-2.  Make Windows specific compilation.
+3.  Make Windows specific compilation.
 
     1.  Either convert Makefiles to CMake or roll my own Project for Visual Studio.
     
-3.  Add helpful error messages.
+4.  Add helpful error messages.
 
     1.  Currently, the program will convert strings into 0 if the argument takes a numeric argument.
         For example, `--prob=test` will set prob to 0.0, because prob is a double.
         
     2.  Other examples will come up whenever I encounter more errors.
     
-4.  Verify that this code runs on Mac.
+5.  Verify that this code runs on Mac.
 
-5.  See if I can't move `base_variable` from `Command_Line_Var_Interface` to the templated subclass of `Command_Line_Var`, which would really just reduce the typecast.
+6.  See if I can't move `base_variable` from `Command_Line_Var_Interface` to the templated subclass of `Command_Line_Var`, which would really just reduce the typecast.
 
     1.  Not really a priority.
     
-6.  Clean up the test program, specifically by moving all the comments to better locations.
+7.  Clean up the test program, specifically by moving all the comments to better locations.
 
-7.  Run more tests, specifically trying to simulate command line response in standard Linux tools.
+8.  Run more tests, specifically trying to simulate command line response in standard Linux tools.
 
     1.  `wget` in particular looks perfect for this, with the notable exception of non-standard command-line arguments, such as -nc, which the library would treat as --nc.
     
