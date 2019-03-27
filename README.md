@@ -2,7 +2,7 @@
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/7f047f6cbe31451f87096d6a64e277fa)](https://www.codacy.com/app/TheLandfill/cpp_cli?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=TheLandfill/cpp_cli&amp;utm_campaign=Badge_Grade)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-This repository consists of a library designed to make parsing command line arguments for c++ easy and efficient and a simple program showing you how it works. While there exist similar libraries such as [GetOpt](https://www.gnu.org/software/libc/manual/html_node/Getopt.html), [commandline](https://archive.codeplex.com/?p=commandline), [CLI11](https://github.com/CLIUtils/CLI11), and [opt](http://www.decompile.com/not_invented_here/opt/), these libraries are either designed with different goals in mind, do far too much, or use weird or complicated syntax. This repository intends to make command line parsing as simple and easy as possible for the user and for the code itself to be easy to read and improve.
+cpp_cli is a library designed to make parsing command line arguments for c++ easy and efficient.
 
 Currently, this library is in the beta stage. While it is stable, there are a few improvements that could be made. I'll list these improvements in the section "Goals."
 
@@ -64,22 +64,24 @@ While the source code itself is standard c++11, the test program's Makefile uses
 
 -   I wanted to contribute to the open source community and familiarize myself with GitHub.
 
-    -   After actually using some of the other competitors to test how my library stacks up to theirs, I'm starting to remember more why I made this library.
-    -   For starters, I don't include half the STL to parse the command line, which keeps executables much smaller than other CLI libraries.	
-    -   This library is also way more flexible than most other libraries. It understands that it's only job is organize data on the command line so that it becomes much easier for you to read (and also document itself through the automatic help generation).
+-   After actually using some of the other competitors ([CLI11](https://github.com/CLIUtils/CLI11) has a good list) to test how my library stacks up to theirs, I'm starting to remember more why I made this library.
+
+    -   For starters, I don't include half the STL to parse the command line, which keeps executables much smaller than other CLI libraries.
+
+    -   This library is also way more flexible than most other libraries. It understands that its only job is to organize data on the command line so that it becomes much easier for you to read (and also document itself through the automatic help generation).
 
 ## Getting Started
-As it currently stands, the header file will work on all systems, but the test program will have to be compiled using a project on Windows.
+As it currently stands, the entire product is valid c++11 except for the makefiles for compiling the projects.
 
 ### Prerequisites
 The library requires nothing but c++11. The test program already has symlinks to the required library and header file.
 
 ### Install
-No installation required. Just download the [folder](src/cpp_command_line_parser/) containing the header files "parser.h", "hash_table.h", and "args_parser_templates.h" and add it to your list of included directories.
+No installation required. Just download the [folder](src/cpp_cli/) containing the header files "cpp_cli.h", "hash_table.h", and "args_parser_templates.h" and add it to your list of included directories.
 
 ## How to Use
 1.  Add the include directory in the project settings or in the Makefile
-2.  Include the header file "parser.h" in the main part of your program.
+2.  Include the header file "cpp_cli.h" in the main part of your program.
 3.  Create a new scope (this is just so the local variables you need to create disappear, but it's not necessary).
 4.  Inside that scope, create your `Command_Line_Var<T>`s, create your `Command_Line_Value<T>`s, add your subcommands, and set help information (syntax specified below).
 5.  If you want to generate a help message, run the function `ARGS_PARSER::generate_help()`, which will create a text file with a help message.
@@ -100,6 +102,7 @@ ARGS_PARSER::set_header("Here is a description of what your program does and so 
 ARGS_PARSER::set_footer("For more information, contact us at the.landfill.coding@gmail.com.");
 ARGS_PARSER::set_help_file_path("/usr/local/bin/folder_you_can_access/");
 
+// Should be called after everything else is set and before ARGS_PARSER::parse
 ARGS_PARSER::generate_help(argv[0]);
 
 // data is an object/literal with data you want to pass to the subcommand.
@@ -149,11 +152,11 @@ Note that this library does not force you to use any of the commonly reserved sh
 When any word that can be identified as a valid subcommand shows up, the parser will then call that subcommand, add a `nullptr` to the list of non_options, then add the subcommand, and then it will then run the subcommand. Each subcommand has its own totally independent set of flags, but they all share the same non_options. This functionality is modeled after the functionality of the `git` command and its subcommands.
 
 ### Types the Library Can Handle
-As it currently stands, this library can handle standard types that can be converted from a char \*, which include all numeric types, std::string, and char \* (char \* has a slightly different syntax which will be discussed below). To extend the library to handle other types, you need to either add a template specialization, which is what I have done for the numeric types, or overload the "=" operator to take in char \*, which is what std::string has done.
+As it currently stands, this library can handle standard types that can be converted from a `char \*`, which include all numeric types, std::string, and `char \*`. To extend the library to handle other types, you need to either add a template specialization, which is what I have done for the numeric types, or overload the "=" operator to take in char \*, which is what std::string has done.
 
 This library, however, does not natively support bool types, as it prefers to set a variable and check if it was set or what it was set to.
 
-When using an argument that does not take subarguments, the variable will be set to whatever the subargument is. For instance, if the flag "-s" does not take arguments, it will set its corresponding variable to "s". Likewise, "--stop-early" will set its corresponding variable to "stop-early". If the argument can be stacked (such as -vvvv), then it will set its variable to "vvvv" for up to eleven stacked characters.
+When using a `Command_Line_Var` that does not take subarguments, the variable will be set to whatever the subargument is. For instance, if the flag "-s" does not take arguments, it will set its corresponding variable to "s". Likewise, "--stop-early" will set its corresponding variable to "stop-early" or however many characters allocated if the variable is a `char *`. If the argument can be stacked (such as -vvvv), then it will set its variable to "vvvv".
 
 The default template version takes the form
 ```cpp
@@ -163,42 +166,43 @@ virtual void set_base_variable(const char * b_v) {
 ```
 
 #### How to Handle a `char` Array
-Instead of creating a `Command_Line_Var<char *>` with the address of the variable containing the char \*, you should create a `Command_Line_Var<char>` with the char \* as its first argument. It also has a fourth argument which sets the buffer size, and so it cannot have a segmentation fault so long as you have allocated more than the buffer size you provide.
+To create a `Command_Line_Var`/`Command_Line_Value` with a `char *` variable:
+
+1.  Use a template type of `char`.
+
+2.  Provide a fourth argument with the size of the buffer.
 
 ```cpp
 const int example_string_bf_size = 20;
 char example_string[example_string_bf_size];
-// INVALID: You have only allocated 20 bytes but say you can hold 200 in example_string.
-Command_Line_Var<char> example_string_var(example_string, ..., ..., 200);
-// VALID
 Command_Line_Var<char> example_string_var(example_string, ..., ..., example_string_bf_size);
-// VALID
-Command_Line_Var<char> example_string_var(example_string, ..., ..., example_string_bf_size / 2);
 ```
 
 Furthermore, you should allocate enough memory to store the longest argument you expect to receive. If you do not, you run the risk of a segmentation fault, and there is nothing the library can do to fix it or notify you that your buffer is too small.
 
-Note that `std::string`s do not have this problem, as they manage their own buffer sizes.
-
-If you just want to set a singular `char`, passing it in as a normal variable works.
+If you just want to set a singular `char`, passing it in as a normal variable works and you do not need to specify a buffer size.
+```cpp
+char example_char = 'x';
+Command_Line_Var<char> example_char_var(example_char, ..., ...);
+```
 
 ### Using Options Whose Locations Matter
-Without going into too much detail, the `-l` flag in `gcc` and `g++` has to come after other arguments in gcc, but my library destroys the order of options in most cases. To keep a flag in the list of non-options, provide `nullptr` for the first argument in the Command_Line_Var constructor where the address of a variable would normally go. For example:
+Without going into too much detail, the `-l` flag in `gcc` and `g++` has to come after other arguments in gcc, but the library destroys the order of options in most cases. To keep a flag in the list of non-options, provide `nullptr` for the first argument in the Command_Line_Var constructor where the address of a variable would normally go. For example:
 ```cpp
 Command_Line_Var<int> example_ignored_variable(nullptr, { "l", "library"}, true);
 ```
-Any flag that starts with `-l` or `--library` will be considered as if it were a non-option. Note that the templated type was an int in this example, but the type doesn't matter. If you wanted to do a `char`, you would have to provide a fourth argument that would not be used. If you set the third argument to false, it will convert `--library=something` to `--library\0something`, where `\0` is the null terminator, but nothing else will happen.
+Any flag that starts with `-l` or `--library` will be considered as if it were a non-option. Note that the templated type was an int in this example, but the type doesn't matter.
 
 Having a `-l` in a group of multiple short arguments such as `-albc` will throw an exception identifying the flag.
 
 ## Exception Throwing
-The library will throw exceptions (std::invalid_argument) when you provide a flag on the command line that you did not specify (except for the single hyphen flag for standard input), provide an argument to a flag that does not take arguments, leave out an argument to a flag that does take arguments, or try to use a short option whose location on the command line matters inside a group of short options. When the library throws an argument, it will tell you the error and which flag caused the error. The exception will only print around the first 32 characters of the flag that caused the error.
+The library will throw exceptions (`std::invalid_argument`) when you provide a flag on the command line that you did not specify (except for the single hyphen flag for standard input), provide an argument to a flag that does not take arguments, leave out an argument to a flag that does take arguments, or try to use a short option whose location on the command line matters inside a group of short options. When the library throws an argument, it will tell you the error and which flag caused the error.
 
-The library will also throw `std::runtime_error`s if there is a problem with writing the help files.
+The library will also throw an `std::runtime_error` if there is a problem with writing the help files.
 
 ## Example Usage
 ```cpp
-#include "parser.h"
+#include "cpp_cli.h"
 
 void sample_subcommand(int argc, char ** argv, void * data);
 
@@ -228,7 +232,9 @@ int main(int argc, char ** argv){
 You can't get much simpler than two lines per variable (half of which are just initializing the variable anyway), but if you want to do more complicated things, you will have to get more complicated.
 
 ## Help Message
-This library can automatically generate a help message by calling `ARGS_PARSER::generate_help(argv[0])`, which will generate a help message and store it in a file within the directory you specify named ".X_help_message", where "X" is the name of each subcommand leading up to and including the current subcommand. For instance, if git used this library the command "git push" would produce the file ".git_push_help_message" while just "git" would produce ".git_help_message". To print out the current help message, use `ARGS_PARSER::print_help()`, which will print out the last help message of the last subcommand that called `generate_help(argv[0])`. It will only generate the help message if there is no help message file corresponding to the current subcommand, meaning you should delete all help message files on compiling. This library has no automatic trigger for a help message, so you'll still need to create a `Command_Line_Value<bool>` for each help message display. You may need to set the filename if you want a help message from a supercommand to be displayed. If `ARGS_PARSER::print_help()` is called without calling `ARGS_PARSER::generate_help(argv[0])`, the program will throw a runtime exception detailing which subcommand needs to have the `generate_help(argv[0])` added.
+This library can automatically generate a help message by calling `ARGS_PARSER::generate_help(argv[0])`, which will generate a help message and store it in a file within the directory you specify named ".X_help_message", where "X" is the name of each subcommand leading up to and including the current subcommand. For instance, if git used this library the command "git push" would produce the file ".git_push_help_message" while just "git" would produce ".git_help_message".
+
+To print out the current help message, use `ARGS_PARSER::print_help()`, which will print out the last help message of the last subcommand that called `generate_help(argv[0])`. It will only generate the help message if there is no help message file corresponding to the current subcommand, meaning you should delete all help message files on compiling. This library has no automatic trigger for a help message, so you'll still need to create a `Command_Line_Value<bool>` for each help message display. You may need to set the filename if you want a help message from a supercommand to be displayed. If `ARGS_PARSER::print_help()` is called without calling `ARGS_PARSER::generate_help(argv[0])`, the program will throw a runtime exception detailing which subcommand needs to have the `generate_help(argv[0])` added.
 
 The help file path can either be relative or absolute, but you should only make it relative if you can guarantee that the executable will only be run from one unchanging directory. Otherwise, running it in multiple locations will produce a new help file in each of those new locations. `ARGS_PARSER::set_help_file_path("")` will set the file path to the current directory.
 
@@ -238,12 +244,12 @@ If the help file path you specify does not exist or you do not have permission t
 
 ### Subcommands
 
-Subcommands are essentially commands embedded inside a single command. The classic example of a command with subcommands is `git`, which has a huge list of subcommands that do completely different things but all use the same functionality of `git`. In this library, each subcommand is treated like a different main function that allows you to pass data from a supercommand into it. Other than the data passed to the subcommand (or data shared by a class if the supercommand and the subcommand have access to the same data), each subcommand is entirely different from the rest of the program, including its supercommand, its subcommands, and any other subcommand, meaning that each subcommand can also have different flags, the same flags, the same flags but referring to different things, etc. Subcommands are declared with the syntax `ARGS_PARSER::add_subcommand("Command Name", subcommand_function)`, where `void subcommand_function(int argc, char ** argv, void * data)` is the style of the subcommand function. It is important to note that each subcommand will treat itself as if it were its own program and completely ignore everything before it on the command line.
+Subcommands are commands embedded inside a single command. The classic example of a command with subcommands is `git`, which has a huge list of subcommands that do completely different things but all use the same functionality of `git`. In this library, each subcommand is treated like a different main function that allows you to pass data from a supercommand into it. Other than the data passed to the subcommand (or data shared by a class if the supercommand and the subcommand have access to the same data), each subcommand is entirely different from the rest of the program, including its supercommand, its subcommands, and any other subcommand, meaning that each subcommand can also have different flags, the same flags, the same flags but referring to different things, etc. Subcommands are declared with the syntax `ARGS_PARSER::add_subcommand("Command Name", subcommand_function)`, where `void subcommand_function(int argc, char ** argv, void * data)` is the style of the subcommand function. It is important to note that each subcommand will treat itself as if it were its own program and completely ignore everything before it on the command line.
 
 #### Subcommands Example
 
 ```cpp
-#include "parser.h"
+#include "cpp_cli.h"
 
 void push_subcommand(int argc, char ** argv, void * data);
 void pull_subcommand(int argc, char ** argv, void * data);
@@ -264,7 +270,7 @@ int main(int argc, char ** argv) {
 	Command_Line_Vat<int> level_var(dfps.level, { "l", "level" }, true);
 	
 	// A void pointer to dfps will be passed to any subcommand used.
-	ARGS_PARSER::parse(argc, argv, &dfps, 100);
+	ARGS_PARSER::parse(argc, argv, &dfps);
 }
 
 void push_subcommand(int argc, char ** argv, void * data_ptr) {
@@ -281,7 +287,7 @@ A `Command_Line_Value` has the same syntax as the `Command_Line_Var`, except the
 
 This is where things get more complicated, though not by as much as you would expect.
 
-I have implemented a general system to handle gcc-style flags called `W_SPECIALIZATION` after gcc's `-W` argument. `W_SPECIALIZATION` is in its own separate header file, "w_specialization.h", which must be included for you to use. You must still include "parser.h". The syntax for `W_SPECIALIZATION` is intentionally similar to the syntax for a `Command_Line_Var`. Note that you are not in any way required to use this type of argument if you don't want to, and can use the simpler versions above.
+I have implemented a general system to handle gcc-style flags called `W_SPECIALIZATION` after gcc's `-W` argument. `W_SPECIALIZATION` is in its own separate header file, "w_specialization.h", which must be included for you to use. You must still include "cpp_cli.h". The syntax for `W_SPECIALIZATION` is intentionally similar to the syntax for a `Command_Line_Var`. Note that you are not in any way required to use this type of argument if you don't want to, and can use the simpler versions above.
 
 `W_SPECIALIZATION` also works normally with other command flags and with other `W_SPECIALIZATIONS`.
 
@@ -290,7 +296,7 @@ Unlike a `Command_Line_Var`, `W_VALUE`s and `W_ARG`s prevent you from providing 
 #### W_SPECIALIZATION Example
 
 ```cpp
-#include "parser.h"
+#include "cpp_cli.h"
 #include "w_specialization.h"
 
 int main(int argc, char ** argv){
@@ -358,7 +364,7 @@ public:
         virtual void set_base_variable(const char * b_v);
 };
 
-// parser.h
+// cpp_cli.h
 #include "args_parser_templates.h"
 
 // Other code
@@ -384,7 +390,7 @@ Note that:
 To specialize the template, you must include the header file `args_parser_templates.h`.
 
 ## Goals
-1.  Refactor the code so that help file generation is more flexible and its own class so it doesn't clutter up parser.h.
+1.  Refactor the code so that help file generation is more flexible and its own class so it doesn't clutter up cpp_cli.h.
 
 2.  Add ability to create a vector of arguments provided to a flag.
 
@@ -436,7 +442,7 @@ To specialize the template, you must include the header file `args_parser_templa
 
     1.  Doing so would solve the issue of Windows specific compilation, as it would automatically be taken care of by the compiler.
     
-    2.  Due to the nature of the algorithm, it has a one time use so it should only be included once, meaning the hit from making the functions inline shouldn't be any worse than just having the library.
+    2.  Because of the nature of the algorithm, it has a one time use so it should only be included once, meaning the hit from making the functions inline shouldn't be any worse than just having the library. However, users might not want to recompile everything everytime, so I have to provide the functionality in its own header file.
     
     3.  It makes the algorithm easier for the user to include and use.
     
