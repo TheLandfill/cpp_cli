@@ -89,32 +89,25 @@ No installation required. Just download the [folder](src/cpp_command_line_parser
 
 ### Syntax of Use
 ```cpp
-// WILL WORK IN ALL CASES, INCLUDING FOR Command_Line_Var<char>.
-Command_Line_Var<T> variable_name_var(variable_name, { "flag1", "flag2", "f" }, takes_args, "Optional help message");
-// DEPRECATED, but will still work for everything except Command_Line_Var<char>. The ampersand doesn't really make a difference otherwise.
-Command_Line_Var<T> variable_name_var(&variable_name, { "flag1", "flag2", "f" }, takes_args, "Optional help message");
+Command_Line_Var<T> generic_syntax(T& variable_to_set, std::vector<const char *> aliases, bool takes_args, const char * help_mess = "")
+Command_Line_Value<T> generic_syntax(T& variable_to_set, std::vector<const char *> aliases, T value_to_set_variable, const char * help_mess = "");
 
-// Same as the Command_Line_Var, except the third argument is the value you want the variable to be set to
-// if any of the flags are found.
-Command_Line_Value<T> variable_name_var(variable_name, { "flag1", "flag2", "f" }, value, "Optional help message");
+ARGS_PARSER::add_subcommand(const char * name_of_subcommand, subcommand, const char * help_mess = "");
+// subcommand is a function of type "void function(int argc, char ** argv, void * data)"
 
-// Adds a subcommand, which will run the second argument if name_of_subcommand is found. The second argument is
-// a function with syntax void function_name(int argc, char ** argv, void * data);
-ARGS_PARSER::add_subcommand("name_of_subcommand", subcommand, "Optional help message.");
-
-// The help message will have the usage printed first, then the header, then the subcommands (if any), then the options, then the footer.
-ARGS_PARSER::set_usage("PROGRAM_NAME [options] non-option0 non-option1");
+ARGS_PARSER::set_usage("[options] non-option0 non-option1");
 ARGS_PARSER::set_header("Here is a description of what your program does and so on.");
 ARGS_PARSER::set_footer("For more information, contact us at the.landfill.coding@gmail.com.");
+ARGS_PARSER::set_help_file_path("/usr/local/bin/folder_you_can_access/");
 
-// This will generate the help message and store it in a file.
-ARGS_PARSER::generate_help();
+ARGS_PARSER::generate_help(argv[0]);
 
-ARGS_PARSER::parse(argc, argv);
+// data is an object/literal with data you want to pass to the subcommand.
+ARGS_PARSER::parse(argc, argv, &data);
 ```
-where `T` is the type of the variable and `variable_name_var` is a stack allocated variable. The first argument is either the variable you want to set, its address (as long as it isn't a `Command_Line_Var<char>`), or a `nullptr`, the second variable is an array/vector of strings corresponding to flags that control the value of the variable, the third argument is a bool that determines whether or not the flags take arguments themselves, and the last argument is an optional help message. If you don't provide one, the flags will still show up in the help message so that you don't forget about documenting a help message. To have a set of flags ignored, pass in anything starting with a backtick (\`) for the help message.
+where `T` is the type of the variable and `variable_name_var` is a stack allocated variable. The first argument to a `Command_Line_Var` is either the variable you want to set, its address (as long as it isn't a `Command_Line_Var<char>`), or a `nullptr`, the second variable is an array/vector of strings corresponding to flags that control the value of the variable, the third argument is a bool that determines whether or not the flags take arguments themselves, and the last argument is an optional help message. The only difference between a `Command_Line_Value` and a `Command_Line_Var` is that the third argument is what you want the variable to be set to if the flag is found instead of a bool that determines whether the flag takes an argument, since `Command_Line_Value`s do not take arguments. If you don't provide one, the flags will still show up in the help message so that you don't forget about documenting a help message. To have a set of flags ignored, pass in anything starting with a backtick (\`) for the help message.
 
-If a `nullptr` is provided for the first argument, the parser will just treat it as if it were a non-option.
+If a `nullptr` is provided for the first argument of a Command_Line_Var or Command_Line_Value, the parser will just treat it as if it were a non-option.
 
 ## Parsing Rules
 [This answer](https://stackoverflow.com/a/14738273/6629221) on stackexchange does a good job of summarizing the standard for command line argument syntax, and the library follows these rules, which are copied below for convenience.
@@ -162,14 +155,7 @@ This library, however, does not natively support bool types, as it prefers to se
 
 When using an argument that does not take subarguments, the variable will be set to whatever the subargument is. For instance, if the flag "-s" does not take arguments, it will set its corresponding variable to "s". Likewise, "--stop-early" will set its corresponding variable to "stop-early". If the argument can be stacked (such as -vvvv), then it will set its variable to "vvvv" for up to eleven stacked characters.
 
-The template specialization itself takes the form
-```cpp
-template<>
-void Command_Line_Var<T>::set_base_variable(const char * b_v) {
-    // Do stuff
-}
-```
-while the default template version takes the form
+The default template version takes the form
 ```cpp
 virtual void set_base_variable(const char * b_v) {
     *(T *)base_variable = b_v;
@@ -180,15 +166,14 @@ virtual void set_base_variable(const char * b_v) {
 Instead of creating a `Command_Line_Var<char *>` with the address of the variable containing the char \*, you should create a `Command_Line_Var<char>` with the char \* as its first argument. It also has a fourth argument which sets the buffer size, and so it cannot have a segmentation fault so long as you have allocated more than the buffer size you provide.
 
 ```cpp
-char example_string[20];
-// INVALID: Does not accept char * as a type and the first argument should be a char *, not a char **.
-Command_Line_Var<char *> example_string_var(&example_string, ..., ..., 20);
+const int example_string_bf_size = 20;
+char example_string[example_string_bf_size];
 // INVALID: You have only allocated 20 bytes but say you can hold 200 in example_string.
 Command_Line_Var<char> example_string_var(example_string, ..., ..., 200);
 // VALID
-Command_Line_Var<char> example_string_var(example_string, ..., ..., 20);
+Command_Line_Var<char> example_string_var(example_string, ..., ..., example_string_bf_size);
 // VALID
-Command_Line_Var<char> example_string_var(example_string, ..., ..., 10);
+Command_Line_Var<char> example_string_var(example_string, ..., ..., example_string_bf_size / 2);
 ```
 
 Furthermore, you should allocate enough memory to store the longest argument you expect to receive. If you do not, you run the risk of a segmentation fault, and there is nothing the library can do to fix it or notify you that your buffer is too small.
@@ -209,9 +194,13 @@ Having a `-l` in a group of multiple short arguments such as `-albc` will throw 
 ## Exception Throwing
 The library will throw exceptions (std::invalid_argument) when you provide a flag on the command line that you did not specify (except for the single hyphen flag for standard input), provide an argument to a flag that does not take arguments, leave out an argument to a flag that does take arguments, or try to use a short option whose location on the command line matters inside a group of short options. When the library throws an argument, it will tell you the error and which flag caused the error. The exception will only print around the first 32 characters of the flag that caused the error.
 
+The library will also throw `std::runtime_error`s if there is a problem with writing the help files.
+
 ## Example Usage
 ```cpp
 #include "parser.h"
+
+void sample_subcommand(int argc, char ** argv, void * data);
 
 int main(int argc, char ** argv){
   std::string filename = "";
@@ -225,13 +214,11 @@ int main(int argc, char ** argv){
     Command_Line_Var<std::string> filename_var(filename, { "f", "filename", "file" }, true);
     Command_Line_Var<int> recursion_level_var(recursion_level, { "r", "recursion", "max_depth" }, true);
     Command_Line_Var<std::string> show_output_var(show_output, { "show_output", "s", "no_out", "half_out" }, false);
-    
-    // A single hyphen means standard input, but it doesn't have to. If you want, add the line
     Command_Line_Var<std::string> standard_input_var(standard_input, { "-" }, false);
-    
     Command_Line_Var<char> c_version_of_string_var(c_version_of_string, { "v" }, false, 20);
+    ARGS_PARSER::add_subcommand(sample_subcommand, "test");
 
-	// The third argument and the fourth argument aren't necessary to set in this simple example.
+    // The third argument argument isn't necessary to set in this simple example.
     non_options = ARGS_PARSER::parse(argc, argv);
   }
   
@@ -243,7 +230,7 @@ You can't get much simpler than two lines per variable (half of which are just i
 ## Help Message
 This library can automatically generate a help message by calling `ARGS_PARSER::generate_help(argv[0])`, which will generate a help message and store it in a file within the directory you specify named ".X_help_message", where "X" is the name of each subcommand leading up to and including the current subcommand. For instance, if git used this library the command "git push" would produce the file ".git_push_help_message" while just "git" would produce ".git_help_message". To print out the current help message, use `ARGS_PARSER::print_help()`, which will print out the last help message of the last subcommand that called `generate_help(argv[0])`. It will only generate the help message if there is no help message file corresponding to the current subcommand, meaning you should delete all help message files on compiling. This library has no automatic trigger for a help message, so you'll still need to create a `Command_Line_Value<bool>` for each help message display. You may need to set the filename if you want a help message from a supercommand to be displayed. If `ARGS_PARSER::print_help()` is called without calling `ARGS_PARSER::generate_help(argv[0])`, the program will throw a runtime exception detailing which subcommand needs to have the `generate_help(argv[0])` added.
 
-The help file path can either be relative or absolute, but you should only make it relative if you can guarantee that the executable will only be run from one unchanging directory. Otherwise, running it in multiple locations will produce a new hidden help file in each of those new locations. `ARGS_PARSER::set_help_file_path("")` will set the file path to the current directory.
+The help file path can either be relative or absolute, but you should only make it relative if you can guarantee that the executable will only be run from one unchanging directory. Otherwise, running it in multiple locations will produce a new help file in each of those new locations. `ARGS_PARSER::set_help_file_path("")` will set the file path to the current directory.
 
 If the help file path you specify does not exist or you do not have permission to create a file in the directory, then the program will throw a runtime exception and notify you of the error. Either rerun the command with the proper privileges, make the directory, or use another directory.
 
@@ -309,13 +296,10 @@ Unlike a `Command_Line_Var`, `W_VALUE`s and `W_ARG`s prevent you from providing 
 int main(int argc, char ** argv){
     bool w_sign_conversion = true;
     bool w_all = false;
-    bool w_extra = false;
     int w_error_level = 1;
-    int w_warning_level = 1;
     char w_type = 'x';
     
     int d_debug_level = 0;
-    bool d_out_of_bounds_checks = false;
     bool d_recursion_bounds = false;
     bool d_ingore_exceptions = true;
     
@@ -328,10 +312,8 @@ int main(int argc, char ** argv){
     W_VALUE<bool> w_sign_conversion_var(w_sign_conversion, w_options, "sign-conversion", true);
     W_VALUE<bool> w_no_sign_conversion_var(w_sign_conversion, w_options, "no-sign-conversion" , false);
     W_VALUE<bool> w_all_var(w_all, w_options, "all", true);
-    W_VALUE<bool> w_extra_var(w_extra, w_options, "extra", true);
     
     W_ARG<int> w_error_level_var(w_error_level, w_options, "error-level");
-    W_ARG<int> w_warning_level_var(w_warning_level, w_options, "warning-level");
     
     W_VALUE<char> w_type_a_var(w_type, w_options, "file", 'f');
     W_VALUE<char> w_type_b_var(w_type, w_options, "dir", 'd');
@@ -340,13 +322,10 @@ int main(int argc, char ** argv){
     
     Command_Line_Var<W_SPECIALIZATION> w_options_var(&w_options, { "W" }, true);
     
-    // Also works with other W_SPECIALIZATIONS
     W_SPECIALIZATION d_options(100);
     
     W_ARG<int> d_debug_level_var(d_debug_level, d_options, "level");
     
-    W_VALUE<bool> d_out_of_bounds_checks_var(d_out_of_bounds_checks, d_options, "out-of-bounds-checks", true);
-    W_VALUE<bool> d_no_out_of_bounds_checks_var(d_out_of_bounds_checks, d_options, "no-out-of-bounds-checks", false);
     W_VALUE<bool> d_recursion_bounds_var(d_recursion_bounds, d_options, "recursion-bounds", true);
     W_VALUE<bool> d_no_recursion_bounds_var(d_recursion_bounds, d_options, "no-recursion-bounds", false);
     W_VALUE<bool> d_ignore_exceptions_var(d_ignore_exceptions, d_options, "ignore-exceptions", true);
@@ -354,11 +333,9 @@ int main(int argc, char ** argv){
     
     Command_Line_Var<W_SPECIALIZATION> d_options_var(d_options, { "D" }, true);
     
-    // Also works with regular Command_Line_Vars
     Command_Line_Var<char> regular_c_string_var(regular_c_string, { "f", "file", "filename" }, true, 100);
     Command_Line_Var<unsigned int> redundancy_of_this_README_var(redundancy_of_this_README, { "r", "redundancy" }, true);
     non_options = ARGS_PARSER::parse(argc, argv);
-    
   }
   
   // Other code. At this point, all variables are set.
