@@ -556,6 +556,30 @@ inline void Command_Line_Var<char>::set_base_variable(const char * b_v) {
 	base_variable_string[i] = '\0';
 }
 
+template<typename T>
+inline void Command_Line_Var<std::vector<T>>::set_base_variable(const char * b_v) {
+	T temp;
+	Command_Line_Var<T> temp_var(temp, {}, true);
+	temp_var.set_base_variable(b_v);
+	(std::vector<T> *)base_variable->push_back(temp);
+}
+
+template<>
+inline void Command_Line_Var<std::vector<const char *>>::set_base_variable(const char * b_v) {
+	(std::vector<const char *> *)base_variable->push_back(temp);
+}
+
+template<>
+inline void Command_Line_Var<std::vector<char *>>::set_base_variable(const char * b_v) {
+	char error_message[] = "Because the length of the char buffers in the vector cannot "
+	"be specified and you cannot set a char * to a const char *, you cannot use std::vector<char *> "
+	"as an acceptable type for a Command_Line_Var. Use either std::vector<const char *>, "
+	"std::vector<std::string>, or another template overload.";
+	char error_buffer[1024];
+	print_within_length(error_message, error_buffer, 1024);
+	throw std::invalid_argument(error_buffer);
+}
+
 template<>
 inline void Command_Line_Var<int>::set_base_variable(const char * b_v) {
 	*(int *)base_variable = strtol(b_v, nullptr, 10);

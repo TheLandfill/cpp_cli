@@ -1,0 +1,11 @@
+*
+!*/
+!*.cpp
+!*.cxx
+!*.h
+!*.c
+!*.hpp
+!.git*
+!Makefile
+!README.md
+!LICENSE

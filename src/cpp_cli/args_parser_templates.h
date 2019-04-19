@@ -45,6 +45,4 @@ public:
 	virtual void set_base_variable(const char * b_v);
 };
 
-
-
 #endif
