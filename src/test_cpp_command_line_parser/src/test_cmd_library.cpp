@@ -16,6 +16,8 @@ int main(int argc, char ** argv) {
 	std::string standard_input_hyphen = "";
 	char verbosity[20] = "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
 	bool help = false;
+	std::vector<int> list_of_ints;
+	list_of_ints.reserve(30);
 
 	// non_options is a vector of args that did not start with a hyphen, did not
 	// start with a double hyphen, or came after the special argument "--".
@@ -112,6 +114,8 @@ int main(int argc, char ** argv) {
 
 		Command_Line_Value<bool> help_var(help, { "h", "help" }, true, "Prints this help message and exits.");
 
+		Command_Line_Vector<int> list_of_ints_var(list_of_ints, { "i", "list" }, "Just here to demonstrate that it can deal with vectors of arguments.");
+
 		ARGS_PARSER::generate_help(argv[0]);
 
 		// Non options must be declared outside the scope unless you don't
@@ -130,6 +134,14 @@ int main(int argc, char ** argv) {
 		std::cout << "probability_of_success:\t" << probability_of_success << std::endl;
 		std::cout << "standard_input_hyphen:\t" << standard_input_hyphen << std::endl;
 		std::cout << "verbosity:\t" << verbosity << std::endl;
+		std::string list_of_ints_string;
+		list_of_ints_string.reserve(100);
+		for (size_t i = 0; i < list_of_ints.size(); i++) {
+			list_of_ints_string += std::to_string(list_of_ints[i]);
+			list_of_ints_string += ", ";
+		}
+		std::cout << "List of ints:\t" << list_of_ints_string.substr(0, list_of_ints_string.length() - 2) << std::endl;
+		std::cout << "List of ints size:\t" << std::to_string(list_of_ints.size()) << std::endl;
 		for (size_t i = 0; i < non_options.size(); i++) {
 			std::cout << "NON_OPTION " << i << ":\t" << non_options[i] << std::endl;
 		}

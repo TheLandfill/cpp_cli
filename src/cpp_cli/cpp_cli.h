@@ -535,7 +535,25 @@ inline void Command_Line_Value<T>::set_base_variable(const char * b_v) {
 	*(T*)base_variable = value;
 }
 
-///////////////////////////Template Specializations////////////////////////////
+
+///////////////////////Command_Line_Value Definitions//////////////////////
+
+template<typename T>
+inline Command_Line_Vector<T>::Command_Line_Vector(std::vector<T> & b_v, std::vector<const char *>a, const char * hm) : Command_Line_Var_Interface(&b_v, a, true, hm) {}
+
+template<typename T>
+inline Command_Line_Vector<T>::Command_Line_Vector(std::vector<T> * b_v, std::vector<const char *>a, const char * hm) : Command_Line_Var_Interface(b_v, a, true, hm) {}
+	
+template<typename T>
+inline void Command_Line_Vector<T>::set_base_variable(const char * b_v) {
+	std::vector<T>& base_variable_vector = *(std::vector<T> *)base_variable;
+	T temp;
+	Command_Line_Var<T> temp_var(temp, {}, true);
+	temp_var.set_base_variable(b_v);
+	base_variable_vector.push_back(temp);
+}
+
+/////////////////////////Template Specializations//////////////////////////
 
 inline Command_Line_Var<char>::Command_Line_Var(char * b_v, std::vector<const char *> a, bool ta, int b_s, const char * hm) : Command_Line_Var_Interface(b_v, a, ta, hm), buffer_size(b_s) {}
 
@@ -556,29 +574,6 @@ inline void Command_Line_Var<char>::set_base_variable(const char * b_v) {
 	base_variable_string[i] = '\0';
 }
 
-template<typename T>
-inline void Command_Line_Var<std::vector<T>>::set_base_variable(const char * b_v) {
-	T temp;
-	Command_Line_Var<T> temp_var(temp, {}, true);
-	temp_var.set_base_variable(b_v);
-	(std::vector<T> *)base_variable->push_back(temp);
-}
-
-template<>
-inline void Command_Line_Var<std::vector<const char *>>::set_base_variable(const char * b_v) {
-	(std::vector<const char *> *)base_variable->push_back(temp);
-}
-
-template<>
-inline void Command_Line_Var<std::vector<char *>>::set_base_variable(const char * b_v) {
-	char error_message[] = "Because the length of the char buffers in the vector cannot "
-	"be specified and you cannot set a char * to a const char *, you cannot use std::vector<char *> "
-	"as an acceptable type for a Command_Line_Var. Use either std::vector<const char *>, "
-	"std::vector<std::string>, or another template overload.";
-	char error_buffer[1024];
-	print_within_length(error_message, error_buffer, 1024);
-	throw std::invalid_argument(error_buffer);
-}
 
 template<>
 inline void Command_Line_Var<int>::set_base_variable(const char * b_v) {
@@ -624,6 +619,24 @@ template<>
 inline void Command_Line_Var<long double>::set_base_variable(const char * b_v) {
 	*(long double *)base_variable = strtold(b_v, nullptr);
 }
+
+template<>
+inline void Command_Line_Vector<const char *>::set_base_variable(const char * b_v) {
+	std::vector<const char *>& base_variable_vector = *(std::vector<const char *>*)base_variable;
+	base_variable_vector.push_back(b_v);
+}
+
+template<>
+inline void Command_Line_Vector<char>::set_base_variable(const char * b_v) {
+	(void)b_v;
+	char error_message[] = "Because the length of the char buffers in the vector cannot\n"
+	"be specified and you cannot set a char * to a const char *, you cannot use char\n"
+	"as an acceptable type for a Command_Line_Vector. Use const char *, std::string, or\n"
+	"another template overload.";
+	throw std::invalid_argument(error_message);
+}
+
+// Static Declarations
 
 std::vector<Command_Line_Var_Interface *> ARGS_PARSER::list_of_cmd_var = std::vector<Command_Line_Var_Interface *>();
 Hash_Table<Command_Line_Var_Interface> ARGS_PARSER::command_line_settings_map = Hash_Table<Command_Line_Var_Interface>(100);
