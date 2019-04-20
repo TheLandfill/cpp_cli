@@ -26,6 +26,14 @@ public:
 };
 
 template<typename T>
+class Command_Line_Vector : public Command_Line_Var_Interface {
+public:
+	Command_Line_Vector(std::vector<T>& b_v, std::vector<const char *> a, const char * hm = "");
+	Command_Line_Vector(std::vector<T>* b_v, std::vector<const char *> a, const char * hm = "");
+	virtual void set_base_variable(const char * b_v);
+};
+
+template<typename T>
 class Command_Line_Value : public Command_Line_Var_Interface {
 private:
 	T value;
@@ -44,7 +52,5 @@ public:
 	Command_Line_Var(char & b_v, std::vector<const char *> a, bool ta, const char * hm = "");
 	virtual void set_base_variable(const char * b_v);
 };
-
-
 
 #endif
