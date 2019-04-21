@@ -627,13 +627,19 @@ inline void Command_Line_Vector<const char *>::set_base_variable(const char * b_
 }
 
 template<>
-inline void Command_Line_Vector<char>::set_base_variable(const char * b_v) {
+inline void Command_Line_Vector<char *>::set_base_variable(const char * b_v) {
 	(void)b_v;
 	char error_message[] = "Because the length of the char buffers in the vector cannot\n"
 	"be specified and you cannot set a char * to a const char *, you cannot use char\n"
 	"as an acceptable type for a Command_Line_Vector. Use const char *, std::string, or\n"
 	"another template overload.";
 	throw std::invalid_argument(error_message);
+}
+
+template<>
+inline void Command_Line_Vector<char>::set_base_variable(const char * b_v) {
+	std::vector<char>& base_variable_vector = *(std::vector<char>*)base_variable;
+	base_variable_vector.push_back(b_v[0]);
 }
 
 // Static Declarations
