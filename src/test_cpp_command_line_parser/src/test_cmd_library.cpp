@@ -4,10 +4,6 @@
 #include <string>
 
 int main(int argc, char ** argv) {
-
-	// sample variables that you want to initialize with default values set just
-	// like you would in any program
-
 	std::string filename = "a.out";
 	int recursion_level = -1;
 	char flag = '\0';
@@ -17,6 +13,7 @@ int main(int argc, char ** argv) {
 	char verbosity[20] = "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
 	bool help = false;
 	std::vector<int> list_of_ints;
+	std::vector<const char *> list_of_declarations;
 	list_of_ints.reserve(30);
 
 	// non_options is a vector of args that did not start with a hyphen, did not
@@ -45,40 +42,6 @@ int main(int argc, char ** argv) {
 		// "" just means current directory. Do not use relative paths unless
 		// you only plan on running it from a single folder.
 		ARGS_PARSER::set_help_file_path("");
-
-
-		// For every variable that you want users to be able to set at the
-		// command line, create an instance of Command_Line_Var, which takes in
-		// the address of the variable (usually, just the '&' address operator
-		// is sufficient) and a list of all the flags that could affect it.
-		// The last flag set determines the value of the variable in question.
-
-		// For instance, if you have -bca -b, where -b, -c, and -a correspond to
-		// mutually exclusive options (the mv command and the flags -i, -f, and
-		// -n are the most accessible examples), the flag variable will be set
-		// to "b". If you use the long options along with the short options,
-		// then the last of the short and long options will happen.
-
-		// If the string you pass into the Command_Line_Var constructor is one
-		// letter, then it is a short option, otherwise it is a long option.
-
-		// Short options are automatically assigned to single dashes while long
-		// options are assigned to two dashes. Short options can be aglomerated
-		// as long as none of them take arguments. Short options can take
-		// arguments in the forms -aValue or -a Value.
-
-		// The library will first try to break apart single dash arguments into
-		// multiple short options, but if it cannot find an option for every
-		// character, it will assume the argument is of the form -aValue. If this
-		// issue causes you problems, use the syntax -a Value instead.
-
-		// All long options have the syntax --long-option or --long-option=arg.
-		// If the option doesn't take any arguments, it will set the variable
-		// to the option itself. In this example, if --flag is used, it will set
-		// the variable flag to "flag". --long-option=arg will set long option
-		// to arg. If Command_Line_Var is used with a standard numeric type, it
-		// will automatically convert from a string to that numeric type.
-		// Negative numbers must be in the format -o-val or --long-option=-val.
 
 		Command_Line_Var<std::string> file_var(filename, { "f", "file", "filename" }, true, "Determines the file to be read. In this program, though, it doesn't do anything.");
 		Command_Line_Var<int> recursion_var(recursion_level, { "r", "recursion", "max-depth" }, true, "Determines the maximum level of recursion allowed before nothing happens because this is a test program.");
@@ -115,6 +78,7 @@ int main(int argc, char ** argv) {
 		Command_Line_Value<bool> help_var(help, { "h", "help" }, true, "Prints this help message and exits.");
 
 		Command_Line_Vector<int> list_of_ints_var(list_of_ints, { "i", "list" }, "Just here to demonstrate that it can deal with vectors of arguments.");
+		Command_Line_Vector<const char *> list_of_declarations_var(list_of_declarations, { "D" }, "Just here to demonstrate that const char *'s work.");
 
 		ARGS_PARSER::generate_help(argv[0]);
 
@@ -140,8 +104,15 @@ int main(int argc, char ** argv) {
 			list_of_ints_string += std::to_string(list_of_ints[i]);
 			list_of_ints_string += ", ";
 		}
-		std::cout << "List of ints:\t" << list_of_ints_string.substr(0, list_of_ints_string.length() - 2) << std::endl;
+		std::cout << "List of ints:\t[ " << list_of_ints_string.substr(0, list_of_ints_string.length() - 2) << " ]" << std::endl;
 		std::cout << "List of ints size:\t" << std::to_string(list_of_ints.size()) << std::endl;
+		std::string list_of_declarations_string = "";
+		list_of_declarations_string.reserve(1000);
+		for (size_t i = 0; i < list_of_declarations.size(); i++) {
+			list_of_declarations_string += list_of_declarations[i];
+			list_of_declarations_string += ", ";
+		}
+		std::cout << "List of declarations:\t[ " << list_of_declarations_string.substr(0, list_of_declarations_string.length() - 2) << " ]" << std::endl;
 		for (size_t i = 0; i < non_options.size(); i++) {
 			std::cout << "NON_OPTION " << i << ":\t" << non_options[i] << std::endl;
 		}
