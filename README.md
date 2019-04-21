@@ -4,7 +4,7 @@
 
 cpp_cli is a library designed to make parsing command line arguments for c++ easy and efficient.
 
-Currently, this library is in the beta stage. While it is stable, there are a few improvements that could be made. I'll list these improvements in the section "Goals."
+Currently, this library has a stable release with all the functionality you could want from a CLI library.
 
 While the source code itself is standard c++11, the test program's Makefile uses the GNU/Linux tools make and g++.
 
@@ -79,14 +79,14 @@ As it currently stands, the entire product is valid c++11 except for the makefil
 The library requires nothing but c++11. The test program already has symlinks to the required library and header file.
 
 ### Install
-No installation required. Just download the [folder](src/cpp_cli/) containing the header files "cpp_cli.h", "hash_table.h", and "args_parser_templates.h" and add it to your list of included directories.
+No installation required. Just download the current release and include "cpp_cli.h" in your cpp source code wherever you want to parse the command line.
 
 ## How to Use
-1.  Add the include directory in the project settings or in the Makefile
-2.  Include the header file "cpp_cli.h" in the main part of your program.
+1.  Download the latest release.
+2.  Include "cpp_cli.h" wherever you call any function of ARGS_PARSER.
 3.  Create a new scope (this is just so the local variables you need to create disappear, but it's not necessary).
-4.  Inside that scope, create your `Command_Line_Var<T>`s, create your `Command_Line_Value<T>`s, add your subcommands, and set help information (syntax specified below).
-5.  If you want to generate a help message, run the function `ARGS_PARSER::generate_help()`, which will create a text file with a help message.
+4.  Inside that scope, create your `Command_Line_Var<T>`s, create your `Command_Line_Value<T>`s, create your `Command_Line_Vector<T>`s, add your subcommands, and set help information (syntax specified below).
+5.  If you want to generate a help message, run the function `ARGS_PARSER::generate_help(argv[0])`, which will create a text file with a help message.
 6.  Once you've created all the `Command_Line_Var`s, run the function `ARGS_PARSER::parse(argc, argv);`.
 7.  All the variables will be set after hash finishes.
 8.  Any non-flagged argument or ignored argument will be returned in a vector of "non_options" in the order in which they appear in the command line.
@@ -95,6 +95,7 @@ No installation required. Just download the [folder](src/cpp_cli/) containing th
 ```cpp
 Command_Line_Var<T> generic_syntax(T& variable_to_set, std::vector<const char *> aliases, bool takes_args, const char * help_mess = "")
 Command_Line_Value<T> generic_syntax(T& variable_to_set, std::vector<const char *> aliases, T value_to_set_variable, const char * help_mess = "");
+Command_Line_Vector<T> generic_syntax(std::vector<T>& vector_to_add_to, std::vector<const char * aliases>, const char * help_mess = "");
 
 ARGS_PARSER::add_subcommand(const char * name_of_subcommand, subcommand, const char * help_mess = "");
 // subcommand is a function of type "void function(int argc, char ** argv, void * data)"
@@ -110,7 +111,7 @@ ARGS_PARSER::generate_help(argv[0]);
 // data is an object/literal with data you want to pass to the subcommand.
 ARGS_PARSER::parse(argc, argv, &data);
 ```
-where `T` is the type of the variable and `variable_name_var` is a stack allocated variable. The first argument to a `Command_Line_Var` is either the variable you want to set, its address (as long as it isn't a `Command_Line_Var<char>`), or a `nullptr`, the second variable is an array/vector of strings corresponding to flags that control the value of the variable, the third argument is a bool that determines whether or not the flags take arguments themselves, and the last argument is an optional help message. The only difference between a `Command_Line_Value` and a `Command_Line_Var` is that the third argument is what you want the variable to be set to if the flag is found instead of a bool that determines whether the flag takes an argument, since `Command_Line_Value`s do not take arguments. If you don't provide one, the flags will still show up in the help message so that you don't forget about documenting a help message. To have a set of flags ignored, pass in anything starting with a backtick (\`) for the help message.
+where `T` is the type of the variable and `variable_name_var` is a stack allocated variable. The first argument to a `Command_Line_Var` is either the variable you want to set, its address (as long as it isn't a `Command_Line_Var<char>`), or a `nullptr`, the second variable is an array/vector of strings corresponding to flags that control the value of the variable, the third argument is a bool that determines whether or not the flags take arguments themselves, and the last argument is an optional help message. The only difference between a `Command_Line_Value` and a `Command_Line_Var` is that the third argument is what you want the variable to be set to if the flag is found instead of a bool that determines whether the flag takes an argument, since `Command_Line_Value`s do not take arguments. `Command_Line_Vector`s take in a vector of type `T` and only take three arguments instead of four like a `Command_Line_Var` or a `Command_Line_Value`. If you don't provide one, the flags will still show up in the help message so that you don't forget about documenting a flag. To have a set of flags ignored, pass in anything starting with a backtick (\`) for the help message.
 
 If a `nullptr` is provided for the first argument of a Command_Line_Var or Command_Line_Value, the parser will just treat it as if it were a non-option.
 
@@ -154,9 +155,7 @@ Note that this library does not force you to use any of the commonly reserved sh
 When any word that can be identified as a valid subcommand shows up, the parser will then call that subcommand, add a `nullptr` to the list of non_options, then add the subcommand, and then it will then run the subcommand. Each subcommand has its own totally independent set of flags, but they all share the same non_options. This functionality is modeled after the functionality of the `git` command and its subcommands.
 
 ### Types the Library Can Handle
-As it currently stands, this library can handle standard types that can be converted from a `char \*`, which include all numeric types, std::string, and `char \*`. To extend the library to handle other types, you need to either add a template specialization, which is what I have done for the numeric types, or overload the "=" operator to take in char \*, which is what std::string has done.
-
-This library, however, does not natively support bool types, as it prefers to set a variable and check if it was set or what it was set to.
+As it currently stands, this library can handle standard types that can be converted from a `char *`, which include all numeric types, std::string, and `char *`. To extend the library to handle other types, you need to either add a template specialization, which is what I have done for the numeric types, or overload the "=" operator to take in `char *`, which is what std::string has done.
 
 When using a `Command_Line_Var` that does not take subarguments, the variable will be set to whatever the subargument is. For instance, if the flag "-s" does not take arguments, it will set its corresponding variable to "s". Likewise, "--stop-early" will set its corresponding variable to "stop-early" or however many characters allocated if the variable is a `char *`. If the argument can be stacked (such as -vvvv), then it will set its variable to "vvvv".
 
