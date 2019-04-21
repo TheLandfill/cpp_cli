@@ -639,7 +639,10 @@ inline void Command_Line_Vector<char *>::set_base_variable(const char * b_v) {
 template<>
 inline void Command_Line_Vector<char>::set_base_variable(const char * b_v) {
 	std::vector<char>& base_variable_vector = *(std::vector<char>*)base_variable;
-	base_variable_vector.push_back(b_v[0]);
+	while (*b_v != '\0') {
+		base_variable_vector.push_back(*b_v);
+		b_v++;
+	}
 }
 
 // Static Declarations
