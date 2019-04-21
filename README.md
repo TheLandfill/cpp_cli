@@ -45,11 +45,13 @@ While the source code itself is standard c++11, the test program's Makefile uses
 	    
     2.  [`Command_Line_Value`s](#command_line_values)
     
-    3.  [W_SPECIALIZATION](#w_specialization)
+    3.  [`Command Line Vector`s](#command_line_vectors)
+    
+    4.  [W_SPECIALIZATION](#w_specialization)
     
         1.  [W_SPECIALIZATION Example](#w_specialization-example)
 	
-    4.  [Adding Your Own Extensions](#adding-your-own-extensions)
+    5.  [Adding Your Own Extensions](#adding-your-own-extensions)
     
 9.  [Goals](#goals)
 
@@ -210,16 +212,25 @@ int main(int argc, char ** argv){
   std::string filename = "";
   int recursion_level = 0;
   std::string show_output = "";
-  std::string standard_input = "";
+  bool standard_input = false;
   char c_version_of_string[20];
+  char file_type = '\0';
+  std::vector<int> list_of_ints;
   std::vector<const char *> non_options;
 
   {
-    Command_Line_Var<std::string> filename_var(filename, { "f", "filename", "file" }, true);
+    Command_Line_Var<std::string> filename_var(filename, { "o", "output", "out" }, true);
     Command_Line_Var<int> recursion_level_var(recursion_level, { "r", "recursion", "max_depth" }, true);
     Command_Line_Var<std::string> show_output_var(show_output, { "show_output", "s", "no_out", "half_out" }, false);
-    Command_Line_Var<std::string> standard_input_var(standard_input, { "-" }, false);
     Command_Line_Var<char> c_version_of_string_var(c_version_of_string, { "v" }, false, 20);
+    
+    Command_Line_Value<bool> standard_input_var(standard_input, { "-" }, true);
+    Command_Line_Value<char> file_type_file_var(file_type, { "file", "f" }, 'f');
+    Command_Line_Value<char> file_type_dir_var(file_type, { "d", "dir", "directory" }, 'd');
+    Command_Line_Value<char> file_type_link_var(file_type, { "l", "link" }, 'l');
+    
+    Command_Line_Vector<int> list_of_ints_var(list_of_ints, { "list", "L" });
+    
     ARGS_PARSER::add_subcommand(sample_subcommand, "test");
 
     // The third argument argument isn't necessary to set in this simple example.
@@ -282,6 +293,18 @@ void push_subcommand(int argc, char ** argv, void * data_ptr) {
 ### `Command_Line_Value`s
 
 A `Command_Line_Value` has the same syntax as the `Command_Line_Var`, except the third argument is what you want the value to be set to when the flag appears. For instance: `Command_Line_Value<char> some_var(some, { "some", "not-nothing", "s", "less-than-all" }, 's')` will set `some` to `'s'` if any of the flags in the list are found. These are better suited to options that do not take args than `Command_Line_Var`s.
+
+### `Command_Line_Vector`s
+
+A `Command_Line_Vector` has a similar syntax to the `Command_Line_Var`, except the third argument is removed entirely because you always need to provide an argument to the flags and it has no default value. It has the syntax:
+
+```cpp
+std::vector<T> list;
+
+Command_Line_Vector<T> list_var(list, { "f", "flag" }, "Help String");
+```
+
+This will take a vector of type `T` as the first argument. Whenever one of its flags are found, it will use `Command_Line_Var<T>::set_base_variable(const char * b_v)` to convert the argument to the type and push it back to the end of the vector unless `T = const char *`, `T = char *`, or `T = char`. If `T = const char *`, then the vector will be filled with pointers to the command line arguments themselves, which should work fine since they're `const`. If `T = char *` on the other hand, the program will throw an exception if you try to run it because you can't set a `char *` to a `const char *` and because you can't fill a vector with bare `char *`s beforehand and tell the program what the buffer size is. Finally, if `T = char`, it will push back every `char` in `b_v` in order because you should be using strings and I'm going to make you feel bad for it.
 
 ### W_SPECIALIZATION
 
