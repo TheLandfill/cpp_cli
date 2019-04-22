@@ -4,7 +4,7 @@
 
 cpp_cli is a library designed to make parsing command line arguments for c++ easy and efficient.
 
-Currently, this library has a stable release with all the functionality you could want from a CLI library.
+Currently, this library has a stable release with all the functionality you could want from a CLI library, including subcommand handling and automatic help generation.
 
 While the source code itself is standard c++11, the test program's Makefile uses the GNU/Linux tools make and g++.
 
