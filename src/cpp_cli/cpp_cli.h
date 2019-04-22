@@ -7,13 +7,15 @@
 #include <vector>
 #include <cstdio>
 
-class ARGS_PARSER {
-friend class Command_Line_Var_Interface;
+namespace cpp_cli{
+	
+class Parser {
+friend class CLI_Interface;
 public:
 	typedef void (*subcommand_func)(int, char **, void *);
 private:
-	static Hash_Table<Command_Line_Var_Interface> command_line_settings_map;
-	static std::vector<Command_Line_Var_Interface *> list_of_cmd_var;
+	static Hash_Table<CLI_Interface> command_line_settings_map;
+	static std::vector<CLI_Interface *> list_of_cmd_var;
 	static std::vector<const char *> non_options;
 
 	static Hash_Table<subcommand_func> subcommand_map;
@@ -70,7 +72,7 @@ public:
 //////////////////////////////INLINE DECLARATIONS//////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-inline std::vector<const char *> ARGS_PARSER::parse(int argc, char ** argv, void * data) {
+inline std::vector<const char *> Parser::parse(int argc, char ** argv, void * data) {
 	fill_hash_table();
 	fill_subcommand_hash_table();
 	non_options.reserve(2 * argc);
@@ -104,31 +106,31 @@ inline std::vector<const char *> ARGS_PARSER::parse(int argc, char ** argv, void
 	return non_options;
 }
 
-inline void ARGS_PARSER::set_header(const char * h) {
+inline void Parser::set_header(const char * h) {
 	header = h;
 }
 
-inline void ARGS_PARSER::set_usage(const char * u) {
+inline void Parser::set_usage(const char * u) {
 	usage = u;
 }
 
-inline void ARGS_PARSER::set_footer(const char * f) {
+inline void Parser::set_footer(const char * f) {
 	footer = f;
 }
 
-inline void ARGS_PARSER::set_help_width(int hw) {
+inline void Parser::set_help_width(int hw) {
 	help_width = hw;
 }
 
-inline void ARGS_PARSER::set_help_file_name(const char * hfn) {
+inline void Parser::set_help_file_name(const char * hfn) {
 	help_file_name = hfn;
 }
 
-inline void ARGS_PARSER::set_help_file_path(const char * hfp) {
+inline void Parser::set_help_file_path(const char * hfp) {
 	help_file_path = hfp;
 }
 
-inline void ARGS_PARSER::generate_help(const char * subcommand_name) {
+inline void Parser::generate_help(const char * subcommand_name) {
 	if (subcommand_name[0] == '.' && subcommand_name[1] == '/') {
 		subcommand_name += 2;
 	}
@@ -137,7 +139,7 @@ inline void ARGS_PARSER::generate_help(const char * subcommand_name) {
 	char * buffer_index = buffer;
 	if (help_file_path == nullptr) {
 		print_within_length("The help file path has not been set. "
-		"Use the command 'ARGS_PARSER::set_help_file_path(const char * hfn)' to set a valid file path before calling generate_help. "
+		"Use the command 'Parser::set_help_file_path(const char * hfn)' to set a valid file path before calling generate_help. "
 		"The file path should be an absolute path if you want the program to run anywhere. "
 		"Only use a relative path if your executable can only be executed from one spot.", buffer, 2048);
 		throw std::runtime_error(buffer);
@@ -194,7 +196,7 @@ inline void ARGS_PARSER::generate_help(const char * subcommand_name) {
 	fprintf(file_writer, "OPTIONS:\n");
 	char help_buffer[2048];
 	for (size_t i = 0; i < list_of_cmd_var.size(); i++) {
-		Command_Line_Var_Interface * clv = list_of_cmd_var[i];
+		CLI_Interface * clv = list_of_cmd_var[i];
 		const std::vector<const char *>& a = clv->get_aliases();
 		if (clv->get_help_message()[0] != '`') {
 			int len_str = 0;
@@ -214,12 +216,12 @@ inline void ARGS_PARSER::generate_help(const char * subcommand_name) {
 	fclose(file_writer);
 }
 
-inline void ARGS_PARSER::print_help() {
+inline void Parser::print_help() {
 	FILE * file_reader = fopen(help_file_name, "r");
 	if (file_reader == nullptr) {
 		char error_message[1024];
 		sprintf(error_message, "%s has not been generated. "
-		"Please put ARGS_PARSER::generate_help() right before calling ARGS_PARSER::parse in the subcommand: ", help_file_name);
+		"Please put Parser::generate_help() right before calling Parser::parse in the subcommand: ", help_file_name);
 		int i = 1;
 		int offset = strlen(error_message);
 		int max_length_of_name = strlen(help_file_name) - strlen("_help_file");
@@ -242,7 +244,7 @@ inline void ARGS_PARSER::print_help() {
 	fclose(file_reader);
 }
 
-inline int ARGS_PARSER::print_within_length(const char * str, char * buffer, int bf_size, int indent) {
+inline int Parser::print_within_length(const char * str, char * buffer, int bf_size, int indent) {
 	int i = 0;
 	int last_position = -1;
 	const char * initial_str = str;
@@ -271,7 +273,7 @@ inline int ARGS_PARSER::print_within_length(const char * str, char * buffer, int
 	return str - initial_str;
 }
 
-inline void ARGS_PARSER::print_within_length(const char * str, int indent, FILE * file_writer) {
+inline void Parser::print_within_length(const char * str, int indent, FILE * file_writer) {
 	const int bf_size = 2048;
 	char buffer[bf_size];
 	const char * i_str = str;
@@ -284,11 +286,11 @@ inline void ARGS_PARSER::print_within_length(const char * str, int indent, FILE 
 	}
 }
 
-inline void ARGS_PARSER::fill_hash_table() {
-	command_line_settings_map = Hash_Table<Command_Line_Var_Interface>(num_unique_flags);
+inline void Parser::fill_hash_table() {
+	command_line_settings_map = Hash_Table<CLI_Interface>(num_unique_flags);
 	Hash_Table<int> flag_already_used(num_unique_flags);
-	for (size_t i = 0; i < ARGS_PARSER::list_of_cmd_var.size(); i++) {
-		Command_Line_Var_Interface * cur_com_var = list_of_cmd_var[i];
+	for (size_t i = 0; i < Parser::list_of_cmd_var.size(); i++) {
+		CLI_Interface * cur_com_var = list_of_cmd_var[i];
 		const std::vector<const char *> & cur_aliases = cur_com_var->get_aliases();
 		for (size_t j = 0; j < cur_aliases.size(); j++) {
 			check_if_option_exists("Flag already used: ", cur_aliases[j], flag_already_used.count(cur_aliases[j]), false);
@@ -298,7 +300,7 @@ inline void ARGS_PARSER::fill_hash_table() {
 	}
 }
 
-inline void ARGS_PARSER::subcommand_handling(int argc, char ** argv, void * data) {
+inline void Parser::subcommand_handling(int argc, char ** argv, void * data) {
 	subcommand_func sub_com = *(subcommand_map[argv[0]]);
 	clear_everything();
 	non_options.push_back(nullptr);
@@ -306,18 +308,18 @@ inline void ARGS_PARSER::subcommand_handling(int argc, char ** argv, void * data
 	sub_com(argc, argv, data);
 }
 
-inline void ARGS_PARSER::reserve_space_for_subcommand(size_t number_of_subcommand) {
+inline void Parser::reserve_space_for_subcommand(size_t number_of_subcommand) {
 	subcommand_list.reserve(number_of_subcommand);
 	subcommand_aliases.reserve(number_of_subcommand);
 }
 
-inline void ARGS_PARSER::add_subcommand(const char * subcommand, ARGS_PARSER::subcommand_func sub_func, const char * description) {
+inline void Parser::add_subcommand(const char * subcommand, Parser::subcommand_func sub_func, const char * description) {
 	subcommand_list.push_back(sub_func);
 	subcommand_aliases.push_back(subcommand);
 	subcommand_descriptions.push_back(description);
 }
 
-inline void ARGS_PARSER::fill_subcommand_hash_table() {
+inline void Parser::fill_subcommand_hash_table() {
 	size_t n_sub = subcommand_aliases.size();
 	subcommand_map.reserve(2 * n_sub);
 	Hash_Table<int> flag_already_used(2 * n_sub);
@@ -328,7 +330,7 @@ inline void ARGS_PARSER::fill_subcommand_hash_table() {
 	}
 }
 
-inline void ARGS_PARSER::clear_everything() {
+inline void Parser::clear_everything() {
 	subcommand_map.clear();
 	subcommand_list.clear();
 	subcommand_aliases.clear();
@@ -339,18 +341,18 @@ inline void ARGS_PARSER::clear_everything() {
 	// non_options is never deleted.
 }
 
-inline void ARGS_PARSER::clear_memory() {
+inline void Parser::clear_memory() {
 	subcommand_map.clear_memory();
 	command_line_settings_map.clear_memory();
 
 	std::vector<subcommand_func>().swap(subcommand_list);
 	std::vector<const char *>().swap(subcommand_aliases);
-	std::vector<Command_Line_Var_Interface *>().swap(list_of_cmd_var);
+	std::vector<CLI_Interface *>().swap(list_of_cmd_var);
 	std::vector<const char *>().swap(subcommand_descriptions);
 	num_unique_flags = 0;
 }
 
-inline int ARGS_PARSER::find_and_mark_split_location(char * flag) {
+inline int Parser::find_and_mark_split_location(char * flag) {
 	int split_location = 0;
 	for (; flag[split_location] != '\0'; split_location++) {
 		if (flag[split_location] == '=') {
@@ -362,7 +364,7 @@ inline int ARGS_PARSER::find_and_mark_split_location(char * flag) {
 	return split_location;
 }
 
-inline void ARGS_PARSER::check_if_option_exists(const char * error_message, const char * potential_option, const bool exists, const bool should_exist) {
+inline void Parser::check_if_option_exists(const char * error_message, const char * potential_option, const bool exists, const bool should_exist) {
 	char error_message_buffer[1024];
 	if (exists != should_exist) {
 		sprintf(error_message_buffer, "%s%s", error_message, potential_option);
@@ -370,7 +372,7 @@ inline void ARGS_PARSER::check_if_option_exists(const char * error_message, cons
 	}
 }
 
-inline void ARGS_PARSER::long_option_handling(char ** argv, int& i) {
+inline void Parser::long_option_handling(char ** argv, int& i) {
 	char * temp_alias = argv[i] + 2;
 	int split_location = find_and_mark_split_location(temp_alias);
 
@@ -404,7 +406,7 @@ inline void ARGS_PARSER::long_option_handling(char ** argv, int& i) {
 	}
 }
 
-inline void ARGS_PARSER::short_option_handling(int argc, char ** argv, int& i) {
+inline void Parser::short_option_handling(int argc, char ** argv, int& i) {
 	char temp_alias[2] = "\0";
 	temp_alias[0] = argv[i][1];
 
@@ -432,7 +434,7 @@ inline void ARGS_PARSER::short_option_handling(int argc, char ** argv, int& i) {
 	multiple_short_options_handling(argc, argv, i);
 }
 
-inline void ARGS_PARSER::multiple_short_options_handling(int argc, char ** argv, int& cur_argument) {
+inline void Parser::multiple_short_options_handling(int argc, char ** argv, int& cur_argument) {
 	int i = 0;
 	char * flag = argv[cur_argument] + 1;
 	char temp_alias[2] = "\0";
@@ -485,81 +487,81 @@ inline void ARGS_PARSER::multiple_short_options_handling(int argc, char ** argv,
 }
 
 
-/////////////////////Command_Line_Var_Interface Definitions////////////////////
+/////////////////////CLI_Interface Definitions////////////////////
 
-inline Command_Line_Var_Interface::Command_Line_Var_Interface(void * b_v, std::vector<const char *> a, bool ta, const char * hm) : takes_args_var(ta), base_variable(b_v), aliases(a), help_message(hm) {
-	ARGS_PARSER::num_unique_flags += a.size();
-	ARGS_PARSER::list_of_cmd_var.push_back(this);
+inline CLI_Interface::CLI_Interface(void * b_v, std::vector<const char *> a, bool ta, const char * hm) : takes_args_var(ta), base_variable(b_v), aliases(a), help_message(hm) {
+	Parser::num_unique_flags += a.size();
+	Parser::list_of_cmd_var.push_back(this);
 }
 
-inline const std::vector<const char *>& Command_Line_Var_Interface::get_aliases() const {
+inline const std::vector<const char *>& CLI_Interface::get_aliases() const {
 	return aliases;
 }
 
-inline bool Command_Line_Var_Interface::takes_args() const {
+inline bool CLI_Interface::takes_args() const {
 	return takes_args_var;
 }
 
-inline bool Command_Line_Var_Interface::ignored() const {
+inline bool CLI_Interface::ignored() const {
 	return base_variable == nullptr;
 }
 
-inline const char * Command_Line_Var_Interface::get_help_message() const {
+inline const char * CLI_Interface::get_help_message() const {
 	return help_message;
 }
 
-//////////////////////////Command_Line_Var Definitions/////////////////////////
+//////////////////////////Var Definitions/////////////////////////
 
 template<typename T>
-inline Command_Line_Var<T>::Command_Line_Var(T & b_v, std::vector<const char *> a, bool ta, const char * hm) : Command_Line_Var_Interface(&b_v, a, ta, hm) {}
+inline Var<T>::Var(T & b_v, std::vector<const char *> a, bool ta, const char * hm) : CLI_Interface(&b_v, a, ta, hm) {}
 
 template<typename T>
-inline Command_Line_Var<T>::Command_Line_Var(T * b_v, std::vector<const char *> a, bool ta, const char * hm) : Command_Line_Var_Interface(b_v, a, ta, hm) {}
+inline Var<T>::Var(T * b_v, std::vector<const char *> a, bool ta, const char * hm) : CLI_Interface(b_v, a, ta, hm) {}
 
 template<typename T>
-inline void Command_Line_Var<T>::set_base_variable(const char * b_v) {
+inline void Var<T>::set_base_variable(const char * b_v) {
 	*(T *)base_variable = b_v;
 }
 
-///////////////////////Command_Line_Value Definitions//////////////////////
+///////////////////////Value Definitions//////////////////////
 
 template<typename T>
-inline Command_Line_Value<T>::Command_Line_Value(T & b_v, std::vector<const char *>a, T v, const char * hm) : Command_Line_Var_Interface(&b_v, a, false, hm), value(v) {}
+inline Value<T>::Value(T & b_v, std::vector<const char *>a, T v, const char * hm) : CLI_Interface(&b_v, a, false, hm), value(v) {}
 
 template<typename T>
-inline Command_Line_Value<T>::Command_Line_Value(T * b_v, std::vector<const char *>a, T v, const char * hm) : Command_Line_Var_Interface(b_v, a, false, hm), value(v) {}
+inline Value<T>::Value(T * b_v, std::vector<const char *>a, T v, const char * hm) : CLI_Interface(b_v, a, false, hm), value(v) {}
 
 template<typename T>
-inline void Command_Line_Value<T>::set_base_variable(const char * b_v) {
+inline void Value<T>::set_base_variable(const char * b_v) {
 	(void)b_v;
 	*(T*)base_variable = value;
 }
 
 
-///////////////////////Command_Line_Value Definitions//////////////////////
+//////////////////////Vector Definitions//////////////////////
 
 template<typename T>
-inline Command_Line_Vector<T>::Command_Line_Vector(std::vector<T> & b_v, std::vector<const char *>a, const char * hm) : Command_Line_Var_Interface(&b_v, a, true, hm) {}
+inline Vector<T>::Vector(std::vector<T> & b_v, std::vector<const char *>a, const char * hm) : CLI_Interface(&b_v, a, true, hm) {}
 
 template<typename T>
-inline Command_Line_Vector<T>::Command_Line_Vector(std::vector<T> * b_v, std::vector<const char *>a, const char * hm) : Command_Line_Var_Interface(b_v, a, true, hm) {}
+inline Vector<T>::Vector(std::vector<T> * b_v, std::vector<const char *>a, const char * hm) : CLI_Interface(b_v, a, true, hm) {}
 	
 template<typename T>
-inline void Command_Line_Vector<T>::set_base_variable(const char * b_v) {
+inline void Vector<T>::set_base_variable(const char * b_v) {
 	std::vector<T>& base_variable_vector = *(std::vector<T> *)base_variable;
 	T temp;
-	Command_Line_Var<T> temp_var(temp, {}, true);
+	Var<T> temp_var(temp, {}, true);
 	temp_var.set_base_variable(b_v);
 	base_variable_vector.push_back(temp);
 }
 
 /////////////////////////Template Specializations//////////////////////////
 
-inline Command_Line_Var<char>::Command_Line_Var(char * b_v, std::vector<const char *> a, bool ta, int b_s, const char * hm) : Command_Line_Var_Interface(b_v, a, ta, hm), buffer_size(b_s) {}
+inline Var<char>::Var(char * b_v, std::vector<const char *> a, bool ta, int b_s, const char * hm) : CLI_Interface(b_v, a, ta, hm), buffer_size(b_s) {}
 
-inline Command_Line_Var<char>::Command_Line_Var(char & b_v, std::vector<const char *> a, bool ta, const char * hm) : Command_Line_Var_Interface(&b_v, a, ta, hm), buffer_size(1) {}
+inline Var<char>::Var(char & b_v, std::vector<const char *> a, bool ta, const char * hm) : CLI_Interface(&b_v, a, ta, hm), buffer_size(1) {}
 
-inline void Command_Line_Var<char>::set_base_variable(const char * b_v) {
+inline void Var<char>::set_base_variable(const char * b_v) {
 	char * base_variable_string = (char *)base_variable;
 	if (buffer_size == 1) {
 		*base_variable_string = b_v[0];
@@ -576,68 +578,68 @@ inline void Command_Line_Var<char>::set_base_variable(const char * b_v) {
 
 
 template<>
-inline void Command_Line_Var<int>::set_base_variable(const char * b_v) {
+inline void Var<int>::set_base_variable(const char * b_v) {
 	*(int *)base_variable = strtol(b_v, nullptr, 10);
 }
 
 template<>
-inline void Command_Line_Var<unsigned int>::set_base_variable(const char * b_v) {
+inline void Var<unsigned int>::set_base_variable(const char * b_v) {
 	*(unsigned int *)base_variable = strtoul(b_v, nullptr, 10);
 }
 
 template<>
-inline void Command_Line_Var<long>::set_base_variable(const char * b_v) {
+inline void Var<long>::set_base_variable(const char * b_v) {
 	*(long *)base_variable = strtol(b_v, nullptr, 10);
 }
 
 template<>
-inline void Command_Line_Var<unsigned long>::set_base_variable(const char * b_v) {
+inline void Var<unsigned long>::set_base_variable(const char * b_v) {
 	*(unsigned long *)base_variable = strtoul(b_v, nullptr, 10);
 }
 
 template<>
-inline void Command_Line_Var<long long>::set_base_variable(const char * b_v) {
+inline void Var<long long>::set_base_variable(const char * b_v) {
 	*(long long *)base_variable = strtoll(b_v, nullptr, 10);
 }
 
 template<>
-inline void Command_Line_Var<unsigned long long>::set_base_variable(const char * b_v) {
+inline void Var<unsigned long long>::set_base_variable(const char * b_v) {
 	*(unsigned long long *)base_variable = strtoull(b_v, nullptr, 10);
 }
 
 template<>
-inline void Command_Line_Var<float>::set_base_variable(const char * b_v) {
+inline void Var<float>::set_base_variable(const char * b_v) {
 	*(float *)base_variable = strtof(b_v, nullptr);
 }
 
 template<>
-inline void Command_Line_Var<double>::set_base_variable(const char * b_v) {
+inline void Var<double>::set_base_variable(const char * b_v) {
 	*(double *)base_variable = strtod(b_v, nullptr);
 }
 
 template<>
-inline void Command_Line_Var<long double>::set_base_variable(const char * b_v) {
+inline void Var<long double>::set_base_variable(const char * b_v) {
 	*(long double *)base_variable = strtold(b_v, nullptr);
 }
 
 template<>
-inline void Command_Line_Vector<const char *>::set_base_variable(const char * b_v) {
+inline void Vector<const char *>::set_base_variable(const char * b_v) {
 	std::vector<const char *>& base_variable_vector = *(std::vector<const char *>*)base_variable;
 	base_variable_vector.push_back(b_v);
 }
 
 template<>
-inline void Command_Line_Vector<char *>::set_base_variable(const char * b_v) {
+inline void Vector<char *>::set_base_variable(const char * b_v) {
 	(void)b_v;
 	char error_message[] = "Because the length of the char buffers in the vector cannot\n"
 	"be specified and you cannot set a char * to a const char *, you cannot use char\n"
-	"as an acceptable type for a Command_Line_Vector. Use const char *, std::string, or\n"
+	"as an acceptable type for a Vector. Use const char *, std::string, or\n"
 	"another template overload.";
 	throw std::invalid_argument(error_message);
 }
 
 template<>
-inline void Command_Line_Vector<char>::set_base_variable(const char * b_v) {
+inline void Vector<char>::set_base_variable(const char * b_v) {
 	std::vector<char>& base_variable_vector = *(std::vector<char>*)base_variable;
 	while (*b_v != '\0') {
 		base_variable_vector.push_back(*b_v);
@@ -647,23 +649,24 @@ inline void Command_Line_Vector<char>::set_base_variable(const char * b_v) {
 
 // Static Declarations
 
-std::vector<Command_Line_Var_Interface *> ARGS_PARSER::list_of_cmd_var = std::vector<Command_Line_Var_Interface *>();
-Hash_Table<Command_Line_Var_Interface> ARGS_PARSER::command_line_settings_map = Hash_Table<Command_Line_Var_Interface>(100);
-std::vector<const char *> ARGS_PARSER::non_options = std::vector<const char *>();
+std::vector<CLI_Interface *> Parser::list_of_cmd_var = std::vector<CLI_Interface *>();
+Hash_Table<CLI_Interface> Parser::command_line_settings_map = Hash_Table<CLI_Interface>(100);
+std::vector<const char *> Parser::non_options = std::vector<const char *>();
 
-Hash_Table<ARGS_PARSER::subcommand_func> ARGS_PARSER::subcommand_map = Hash_Table<subcommand_func>(10);
-std::vector<ARGS_PARSER::subcommand_func> ARGS_PARSER::subcommand_list = std::vector<subcommand_func>();
-std::vector<const char *> ARGS_PARSER::subcommand_aliases = std::vector<const char *>();
-std::vector<const char *> ARGS_PARSER::subcommand_descriptions = std::vector<const char *>();
+Hash_Table<Parser::subcommand_func> Parser::subcommand_map = Hash_Table<subcommand_func>(10);
+std::vector<Parser::subcommand_func> Parser::subcommand_list = std::vector<subcommand_func>();
+std::vector<const char *> Parser::subcommand_aliases = std::vector<const char *>();
+std::vector<const char *> Parser::subcommand_descriptions = std::vector<const char *>();
 
-size_t ARGS_PARSER::num_unique_flags = 0;
+size_t Parser::num_unique_flags = 0;
 
-const char * ARGS_PARSER::header = "";
-const char * ARGS_PARSER::usage = "";
-const char * ARGS_PARSER::footer = "";
-const char * ARGS_PARSER::help_file_name = ".main_help_file";
-const char * ARGS_PARSER::help_file_path = nullptr;
-int ARGS_PARSER::help_width = 80;
-std::vector<const char *> ARGS_PARSER::current_command_list = std::vector<const char *>();
+const char * Parser::header = "";
+const char * Parser::usage = "";
+const char * Parser::footer = "";
+const char * Parser::help_file_name = ".main_help_file";
+const char * Parser::help_file_path = nullptr;
+int Parser::help_width = 80;
+std::vector<const char *> Parser::current_command_list = std::vector<const char *>();
 
+}
 #endif

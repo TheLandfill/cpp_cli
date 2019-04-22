@@ -43,13 +43,13 @@ While the source code itself is standard c++11, the test program's Makefile uses
     
         1.  [Subcommands Example](#subcommands-example)
 	    
-    2.  [`Command_Line_Value`s](#command_line_values)
+    2.  [`Value`s](#command_line_values)
     
     3.  [`Command Line Vector`s](#command_line_vectors)
     
-    4.  [W_SPECIALIZATION](#w_specialization)
+    4.  [WSpecialization](#w_specialization)
     
-        1.  [W_SPECIALIZATION Example](#w_specialization-example)
+        1.  [WSpecialization Example](#w_specialization-example)
 	
     5.  [Adding Your Own Extensions](#adding-your-own-extensions)
     
@@ -83,37 +83,38 @@ No installation required. Just download the current release and include "cpp_cli
 
 ## How to Use
 1.  Download the latest release.
-2.  Include "cpp_cli.h" wherever you call any function of ARGS_PARSER.
+2.  Include "cpp_cli.h" wherever you call any function of Parser.
 3.  Create a new scope (this is just so the local variables you need to create disappear, but it's not necessary).
-4.  Inside that scope, create your `Command_Line_Var<T>`s, create your `Command_Line_Value<T>`s, create your `Command_Line_Vector<T>`s, add your subcommands, and set help information (syntax specified below).
-5.  If you want to generate a help message, run the function `ARGS_PARSER::generate_help(argv[0])`, which will create a text file with a help message.
-6.  Once you've created all the `Command_Line_Var`s, run the function `ARGS_PARSER::parse(argc, argv);`.
+4.  Inside that scope, create your `Var<T>`s, create your `Value<T>`s, create your `Vector<T>`s, add your subcommands, and set help information (syntax specified below).
+5.  If you want to generate a help message, run the function `Parser::generate_help(argv[0])`, which will create a text file with a help message.
+6.  Once you've created all the `Var`s, run the function `Parser::parse(argc, argv);`.
 7.  All the variables will be set after hash finishes.
 8.  Any non-flagged argument or ignored argument will be returned in a vector of "non_options" in the order in which they appear in the command line.
 
 ### Syntax of Use
 ```cpp
-Command_Line_Var<T> generic_syntax(T& variable_to_set, std::vector<const char *> aliases, bool takes_args, const char * help_mess = "")
-Command_Line_Value<T> generic_syntax(T& variable_to_set, std::vector<const char *> aliases, T value_to_set_variable, const char * help_mess = "");
-Command_Line_Vector<T> generic_syntax(std::vector<T>& vector_to_add_to, std::vector<const char * aliases>, const char * help_mess = "");
+using namespace cpp_cli;
+Var<T> generic_syntax(T& variable_to_set, std::vector<const char *> aliases, bool takes_args, const char * help_mess = "")
+Value<T> generic_syntax(T& variable_to_set, std::vector<const char *> aliases, T value_to_set_variable, const char * help_mess = "");
+Vector<T> generic_syntax(std::vector<T>& vector_to_add_to, std::vector<const char * aliases>, const char * help_mess = "");
 
-ARGS_PARSER::add_subcommand(const char * name_of_subcommand, subcommand, const char * help_mess = "");
+Parser::add_subcommand(const char * name_of_subcommand, subcommand, const char * help_mess = "");
 // subcommand is a function of type "void function(int argc, char ** argv, void * data)"
 
-ARGS_PARSER::set_usage("[options] non-option0 non-option1");
-ARGS_PARSER::set_header("Here is a description of what your program does and so on.");
-ARGS_PARSER::set_footer("For more information, contact us at the.landfill.coding@gmail.com.");
-ARGS_PARSER::set_help_file_path("/usr/local/bin/folder_you_can_access/");
+Parser::set_usage("[options] non-option0 non-option1");
+Parser::set_header("Here is a description of what your program does and so on.");
+Parser::set_footer("For more information, contact us at the.landfill.coding@gmail.com.");
+Parser::set_help_file_path("/usr/local/bin/folder_you_can_access/");
 
-// Should be called after everything else is set and before ARGS_PARSER::parse
-ARGS_PARSER::generate_help(argv[0]);
+// Should be called after everything else is set and before Parser::parse
+Parser::generate_help(argv[0]);
 
 // data is an object/literal with data you want to pass to the subcommand.
-ARGS_PARSER::parse(argc, argv, &data);
+Parser::parse(argc, argv, &data);
 ```
-where `T` is the type of the variable and `variable_name_var` is a stack allocated variable. The first argument to a `Command_Line_Var` is either the variable you want to set, its address (as long as it isn't a `Command_Line_Var<char>`), or a `nullptr`, the second variable is an array/vector of strings corresponding to flags that control the value of the variable, the third argument is a bool that determines whether or not the flags take arguments themselves, and the last argument is an optional help message. The only difference between a `Command_Line_Value` and a `Command_Line_Var` is that the third argument is what you want the variable to be set to if the flag is found instead of a bool that determines whether the flag takes an argument, since `Command_Line_Value`s do not take arguments. `Command_Line_Vector`s take in a vector of type `T` and only take three arguments instead of four like a `Command_Line_Var` or a `Command_Line_Value`. If you don't provide one, the flags will still show up in the help message so that you don't forget about documenting a flag. To have a set of flags ignored, pass in anything starting with a backtick (\`) for the help message.
+where `T` is the type of the variable and `variable_name_var` is a stack allocated variable. The first argument to a `Var` is either the variable you want to set, its address (as long as it isn't a `Var<char>`), or a `nullptr`, the second variable is an array/vector of strings corresponding to flags that control the value of the variable, the third argument is a bool that determines whether or not the flags take arguments themselves, and the last argument is an optional help message. The only difference between a `Value` and a `Var` is that the third argument is what you want the variable to be set to if the flag is found instead of a bool that determines whether the flag takes an argument, since `Value`s do not take arguments. `Vector`s take in a vector of type `T` and only take three arguments instead of four like a `Var` or a `Value`. If you don't provide one, the flags will still show up in the help message so that you don't forget about documenting a flag. To have a set of flags ignored, pass in anything starting with a backtick (\`) for the help message.
 
-If a `nullptr` is provided for the first argument of a Command_Line_Var or Command_Line_Value, the parser will just treat it as if it were a non-option.
+If a `nullptr` is provided for the first argument of a Var or Value, the parser will just treat it as if it were a non-option.
 
 ## Parsing Rules
 [This answer](https://stackoverflow.com/a/14738273/6629221) on stackexchange does a good job of summarizing the standard for command line argument syntax, and the library follows these rules, which are copied below for convenience.
@@ -157,7 +158,7 @@ When any word that can be identified as a valid subcommand shows up, the parser 
 ### Types the Library Can Handle
 As it currently stands, this library can handle standard types that can be converted from a `char *`, which include all numeric types, std::string, and `char *`. To extend the library to handle other types, you need to either add a template specialization, which is what I have done for the numeric types, or overload the "=" operator to take in `char *`, which is what std::string has done.
 
-When using a `Command_Line_Var` that does not take subarguments, the variable will be set to whatever the subargument is. For instance, if the flag "-s" does not take arguments, it will set its corresponding variable to "s". Likewise, "--stop-early" will set its corresponding variable to "stop-early" or however many characters allocated if the variable is a `char *`. If the argument can be stacked (such as -vvvv), then it will set its variable to "vvvv".
+When using a `Var` that does not take subarguments, the variable will be set to whatever the subargument is. For instance, if the flag "-s" does not take arguments, it will set its corresponding variable to "s". Likewise, "--stop-early" will set its corresponding variable to "stop-early" or however many characters allocated if the variable is a `char *`. If the argument can be stacked (such as -vvvv), then it will set its variable to "vvvv".
 
 The default template version takes the form
 ```cpp
@@ -167,7 +168,7 @@ virtual void set_base_variable(const char * b_v) {
 ```
 
 #### How to Handle a `char` Array
-To create a `Command_Line_Var`/`Command_Line_Value` with a `char *` variable:
+To create a `Var`/`Value` with a `char *` variable:
 
 1.  Use a template type of `char`.
 
@@ -176,7 +177,7 @@ To create a `Command_Line_Var`/`Command_Line_Value` with a `char *` variable:
 ```cpp
 const int example_string_bf_size = 20;
 char example_string[example_string_bf_size];
-Command_Line_Var<char> example_string_var(example_string, ..., ..., example_string_bf_size);
+Var<char> example_string_var(example_string, ..., ..., example_string_bf_size);
 ```
 
 Furthermore, you should allocate enough memory to store the longest argument you expect to receive. If you do not, you run the risk of a segmentation fault, and there is nothing the library can do to fix it or notify you that your buffer is too small.
@@ -184,13 +185,13 @@ Furthermore, you should allocate enough memory to store the longest argument you
 If you just want to set a singular `char`, passing it in as a normal variable works and you do not need to specify a buffer size.
 ```cpp
 char example_char = 'x';
-Command_Line_Var<char> example_char_var(example_char, ..., ...);
+Var<char> example_char_var(example_char, ..., ...);
 ```
 
 ### Using Options Whose Locations Matter
-Without going into too much detail, the `-l` flag in `gcc` and `g++` has to come after other arguments in gcc, but the library destroys the order of options in most cases. To keep a flag in the list of non-options, provide `nullptr` for the first argument in the Command_Line_Var constructor where the address of a variable would normally go. For example:
+Without going into too much detail, the `-l` flag in `gcc` and `g++` has to come after other arguments in gcc, but the library destroys the order of options in most cases. To keep a flag in the list of non-options, provide `nullptr` for the first argument in the Var constructor where the address of a variable would normally go. For example:
 ```cpp
-Command_Line_Var<int> example_ignored_variable(nullptr, { "l", "library"}, true);
+Var<int> example_ignored_variable(nullptr, { "l", "library"}, true);
 ```
 Any flag that starts with `-l` or `--library` will be considered as if it were a non-option. Note that the templated type was an int in this example, but the type doesn't matter.
 
@@ -218,22 +219,23 @@ int main(int argc, char ** argv){
   std::vector<const char *> non_options;
 
   {
-    Command_Line_Var<std::string> filename_var(filename, { "o", "output", "out" }, true);
-    Command_Line_Var<int> recursion_level_var(recursion_level, { "r", "recursion", "max_depth" }, true);
-    Command_Line_Var<std::string> show_output_var(show_output, { "show_output", "s", "no_out", "half_out" }, false);
-    Command_Line_Var<char> c_version_of_string_var(c_version_of_string, { "v" }, false, 20);
+    using namespace cpp_cli;
+    Var<std::string> filename_var(filename, { "o", "output", "out" }, true);
+    Var<int> recursion_level_var(recursion_level, { "r", "recursion", "max_depth" }, true);
+    Var<std::string> show_output_var(show_output, { "show_output", "s", "no_out", "half_out" }, false);
+    Var<char> c_version_of_string_var(c_version_of_string, { "v" }, false, 20);
     
-    Command_Line_Value<bool> standard_input_var(standard_input, { "-" }, true);
-    Command_Line_Value<char> file_type_file_var(file_type, { "file", "f" }, 'f');
-    Command_Line_Value<char> file_type_dir_var(file_type, { "d", "dir", "directory" }, 'd');
-    Command_Line_Value<char> file_type_link_var(file_type, { "l", "link" }, 'l');
+    Value<bool> standard_input_var(standard_input, { "-" }, true);
+    Value<char> file_type_file_var(file_type, { "file", "f" }, 'f');
+    Value<char> file_type_dir_var(file_type, { "d", "dir", "directory" }, 'd');
+    Value<char> file_type_link_var(file_type, { "l", "link" }, 'l');
     
-    Command_Line_Vector<int> list_of_ints_var(list_of_ints, { "list", "L" });
+    Vector<int> list_of_ints_var(list_of_ints, { "list", "L" });
     
-    ARGS_PARSER::add_subcommand(sample_subcommand, "test");
+    Parser::add_subcommand(sample_subcommand, "test");
 
     // The third argument argument isn't necessary to set in this simple example.
-    non_options = ARGS_PARSER::parse(argc, argv);
+    non_options = Parser::parse(argc, argv);
   }
   
   // Other code. At this point, all variables are set.
@@ -242,11 +244,11 @@ int main(int argc, char ** argv){
 You can't get much simpler than two lines per variable (half of which are just initializing the variable anyway), but if you want to do more complicated things, you will have to get more complicated.
 
 ## Help Message
-This library can automatically generate a help message by calling `ARGS_PARSER::generate_help(argv[0])`, which will generate a help message and store it in a file within the directory you specify named ".X_help_message", where "X" is the name of each subcommand leading up to and including the current subcommand. For instance, if git used this library the command "git push" would produce the file ".git_push_help_message" while just "git" would produce ".git_help_message".
+This library can automatically generate a help message by calling `Parser::generate_help(argv[0])`, which will generate a help message and store it in a file within the directory you specify named ".X_help_message", where "X" is the name of each subcommand leading up to and including the current subcommand. For instance, if git used this library the command "git push" would produce the file ".git_push_help_message" while just "git" would produce ".git_help_message".
 
-To print out the current help message, use `ARGS_PARSER::print_help()`, which will print out the last help message of the last subcommand that called `generate_help(argv[0])`. It will only generate the help message if there is no help message file corresponding to the current subcommand, meaning you should delete all help message files on compiling. This library has no automatic trigger for a help message, so you'll still need to create a `Command_Line_Value<bool>` for each help message display. You may need to set the filename if you want a help message from a supercommand to be displayed. If `ARGS_PARSER::print_help()` is called without calling `ARGS_PARSER::generate_help(argv[0])`, the program will throw a runtime exception detailing which subcommand needs to have the `generate_help(argv[0])` added.
+To print out the current help message, use `Parser::print_help()`, which will print out the last help message of the last subcommand that called `generate_help(argv[0])`. It will only generate the help message if there is no help message file corresponding to the current subcommand, meaning you should delete all help message files on compiling. This library has no automatic trigger for a help message, so you'll still need to create a `Value<bool>` for each help message display. You may need to set the filename if you want a help message from a supercommand to be displayed. If `Parser::print_help()` is called without calling `Parser::generate_help(argv[0])`, the program will throw a runtime exception detailing which subcommand needs to have the `generate_help(argv[0])` added.
 
-The help file path can either be relative or absolute, but you should only make it relative if you can guarantee that the executable will only be run from one unchanging directory. Otherwise, running it in multiple locations will produce a new help file in each of those new locations. `ARGS_PARSER::set_help_file_path("")` will set the file path to the current directory.
+The help file path can either be relative or absolute, but you should only make it relative if you can guarantee that the executable will only be run from one unchanging directory. Otherwise, running it in multiple locations will produce a new help file in each of those new locations. `Parser::set_help_file_path("")` will set the file path to the current directory.
 
 If the help file path you specify does not exist or you do not have permission to create a file in the directory, then the program will throw a runtime exception and notify you of the error. Either rerun the command with the proper privileges, make the directory, or use another directory.
 
@@ -254,7 +256,7 @@ If the help file path you specify does not exist or you do not have permission t
 
 ### Subcommands
 
-Subcommands are commands embedded inside a single command. The classic example of a command with subcommands is `git`, which has a huge list of subcommands that do completely different things but all use the same functionality of `git`. In this library, each subcommand is treated like a different main function that allows you to pass data from a supercommand into it. Other than the data passed to the subcommand (or data shared by a class if the supercommand and the subcommand have access to the same data), each subcommand is entirely different from the rest of the program, including its supercommand, its subcommands, and any other subcommand, meaning that each subcommand can also have different flags, the same flags, the same flags but referring to different things, etc. Subcommands are declared with the syntax `ARGS_PARSER::add_subcommand("Command Name", subcommand_function)`, where `void subcommand_function(int argc, char ** argv, void * data)` is the style of the subcommand function. It is important to note that each subcommand will treat itself as if it were its own program and completely ignore everything before it on the command line.
+Subcommands are commands embedded inside a single command. The classic example of a command with subcommands is `git`, which has a huge list of subcommands that do completely different things but all use the same functionality of `git`. In this library, each subcommand is treated like a different main function that allows you to pass data from a supercommand into it. Other than the data passed to the subcommand (or data shared by a class if the supercommand and the subcommand have access to the same data), each subcommand is entirely different from the rest of the program, including its supercommand, its subcommands, and any other subcommand, meaning that each subcommand can also have different flags, the same flags, the same flags but referring to different things, etc. Subcommands are declared with the syntax `Parser::add_subcommand("Command Name", subcommand_function)`, where `void subcommand_function(int argc, char ** argv, void * data)` is the style of the subcommand function. It is important to note that each subcommand will treat itself as if it were its own program and completely ignore everything before it on the command line.
 
 #### Subcommands Example
 
@@ -271,16 +273,17 @@ struct Data_From_Principle_Subcommand {
 
 
 int main(int argc, char ** argv) {
+    using namespace cpp_cli;
 	Data_For_Push_Subcommand dfps;
 
-	ARGS_PARSER::add_subcommand("push", push_subcommand);
-	ARGS_PARSER::add_subcommand("pull", pull_subcommand);
+	Parser::add_subcommand("push", push_subcommand);
+	Parser::add_subcommand("pull", pull_subcommand);
 	// Other stuff like flags
-	Command_Line_Var<std::string> file_path_var(dfps.file_path, { "p", "path" }, true);
-	Command_Line_Vat<int> level_var(dfps.level, { "l", "level" }, true);
+	Var<std::string> file_path_var(dfps.file_path, { "p", "path" }, true);
+	Vat<int> level_var(dfps.level, { "l", "level" }, true);
 	
 	// A void pointer to dfps will be passed to any subcommand used.
-	ARGS_PARSER::parse(argc, argv, &dfps);
+	Parser::parse(argc, argv, &dfps);
 }
 
 void push_subcommand(int argc, char ** argv, void * data_ptr) {
@@ -289,37 +292,36 @@ void push_subcommand(int argc, char ** argv, void * data_ptr) {
 }
 ```
 
-### `Command_Line_Value`s
+### `Value`s
 
-A `Command_Line_Value` has the same syntax as the `Command_Line_Var`, except the third argument is what you want the value to be set to when the flag appears. For instance: `Command_Line_Value<char> some_var(some, { "some", "not-nothing", "s", "less-than-all" }, 's')` will set `some` to `'s'` if any of the flags in the list are found. These are better suited to options that do not take args than `Command_Line_Var`s.
+A `Value` has the same syntax as the `Var`, except the third argument is what you want the value to be set to when the flag appears. For instance: `Value<char> some_var(some, { "some", "not-nothing", "s", "less-than-all" }, 's')` will set `some` to `'s'` if any of the flags in the list are found. These are better suited to options that do not take args than `Var`s.
 
-### `Command_Line_Vector`s
+### `Vector`s
 
-A `Command_Line_Vector` has a similar syntax to the `Command_Line_Var`, except the third argument is removed entirely because you always need to provide an argument to the flags and it has no default value. It has the syntax:
+A `Vector` has a similar syntax to the `Var`, except the third argument is removed entirely because you always need to provide an argument to the flags and it has no default value. It has the syntax:
 
 ```cpp
 std::vector<T> list;
 
-Command_Line_Vector<T> list_var(list, { "f", "flag" }, "Help String");
+Vector<T> list_var(list, { "f", "flag" }, "Help String");
 ```
 
-This will take a vector of type `T` as the first argument. Whenever one of its flags are found, it will use `Command_Line_Var<T>::set_base_variable(const char * b_v)` to convert the argument to the type and push it back to the end of the vector unless `T = const char *`, `T = char *`, or `T = char`. If `T = const char *`, then the vector will be filled with pointers to the command line arguments themselves, which should work fine since they're `const`. If `T = char *` on the other hand, the program will throw an exception if you try to run it because you can't set a `char *` to a `const char *` and because you can't fill a vector with bare `char *`s beforehand and tell the program what the buffer size is. Finally, if `T = char`, it will push back every `char` in `b_v` in order because you should be using strings and I'm going to make you feel bad for it.
+This will take a vector of type `T` as the first argument. Whenever one of its flags are found, it will use `Var<T>::set_base_variable(const char * b_v)` to convert the argument to the type and push it back to the end of the vector unless `T = const char *`, `T = char *`, or `T = char`. If `T = const char *`, then the vector will be filled with pointers to the command line arguments themselves, which should work fine since they're `const`. If `T = char *` on the other hand, the program will throw an exception if you try to run it because you can't set a `char *` to a `const char *` and because you can't fill a vector with bare `char *`s beforehand and tell the program what the buffer size is. Finally, if `T = char`, it will push back every `char` in `b_v` in order because you should be using strings and I'm going to make you feel bad for it.
 
-### W_SPECIALIZATION
+### WSpecialization
 
 This is where things get more complicated, though not by as much as you would expect.
 
-I have implemented a general system to handle gcc-style flags called `W_SPECIALIZATION` after gcc's `-W` argument. `W_SPECIALIZATION` is in its own separate header file, "w_specialization.h", which must be included for you to use. You must still include "cpp_cli.h". The syntax for `W_SPECIALIZATION` is intentionally similar to the syntax for a `Command_Line_Var`. Note that you are not in any way required to use this type of argument if you don't want to, and can use the simpler versions above.
+I have implemented a general system to handle gcc-style flags called `WSpecialization` after gcc's `-W` argument. `WSpecialization` is in its own separate header file, "w_specialization.h", which must be included for you to use. You must still include "cpp_cli.h". The syntax for `WSpecialization` is intentionally similar to the syntax for a `Var`. Note that you are not in any way required to use this type of argument if you don't want to, and can use the simpler versions above.
 
-`W_SPECIALIZATION` also works normally with other command flags and with other `W_SPECIALIZATIONS`.
+`WSpecialization` also works normally with other command flags and with other `WSpecializationS`.
 
-Unlike a `Command_Line_Var`, `W_VALUE`s and `W_ARG`s prevent you from providing more than one subalias, though you could if you just made multiple `W_VALUE`s or `W_ARGS`.
+Unlike a `Var`, `Wvalue`s and `Warg`s prevent you from providing more than one subalias, though you could if you just made multiple `Wvalue`s or `WargS`.
 
-#### W_SPECIALIZATION Example
+#### WSpecialization Example
 
 ```cpp
 #include "cpp_cli.h"
-#include "w_specialization.h"
 
 int main(int argc, char ** argv){
     bool w_sign_conversion = true;
@@ -335,54 +337,55 @@ int main(int argc, char ** argv){
     unsigned int redundancy_of_this_README = (unsigned int)-1;
     
   {
-    W_SPECIALIZATION w_options(100);
+    using namespace cpp_cli;
+    WSpecialization w_options(100);
     
-    W_VALUE<bool> w_sign_conversion_var(w_sign_conversion, w_options, "sign-conversion", true);
-    W_VALUE<bool> w_no_sign_conversion_var(w_sign_conversion, w_options, "no-sign-conversion" , false);
-    W_VALUE<bool> w_all_var(w_all, w_options, "all", true);
+    Wvalue<bool> w_sign_conversion_var(w_sign_conversion, w_options, "sign-conversion", true);
+    Wvalue<bool> w_no_sign_conversion_var(w_sign_conversion, w_options, "no-sign-conversion" , false);
+    Wvalue<bool> w_all_var(w_all, w_options, "all", true);
     
-    W_ARG<int> w_error_level_var(w_error_level, w_options, "error-level");
+    Warg<int> w_error_level_var(w_error_level, w_options, "error-level");
     
-    W_VALUE<char> w_type_a_var(w_type, w_options, "file", 'f');
-    W_VALUE<char> w_type_b_var(w_type, w_options, "dir", 'd');
-    W_VALUE<char> w_type_c_var(w_type, w_options, "link", 'l');
-    W_VALUE<char> w_type_d_var(w_type, w_options, "any", 'a');
+    Wvalue<char> w_type_a_var(w_type, w_options, "file", 'f');
+    Wvalue<char> w_type_b_var(w_type, w_options, "dir", 'd');
+    Wvalue<char> w_type_c_var(w_type, w_options, "link", 'l');
+    Wvalue<char> w_type_d_var(w_type, w_options, "any", 'a');
     
-    Command_Line_Var<W_SPECIALIZATION> w_options_var(&w_options, { "W" }, true);
+    Var<WSpecialization> w_options_var(&w_options, { "W" }, true);
     
-    W_SPECIALIZATION d_options(100);
+    WSpecialization d_options(100);
     
-    W_ARG<int> d_debug_level_var(d_debug_level, d_options, "level");
+    Warg<int> d_debug_level_var(d_debug_level, d_options, "level");
     
-    W_VALUE<bool> d_recursion_bounds_var(d_recursion_bounds, d_options, "recursion-bounds", true);
-    W_VALUE<bool> d_no_recursion_bounds_var(d_recursion_bounds, d_options, "no-recursion-bounds", false);
-    W_VALUE<bool> d_ignore_exceptions_var(d_ignore_exceptions, d_options, "ignore-exceptions", true);
-    W_VALUE<bool> d_no_ignore_exceptions_var(d_ignore_exceptions, d_options, "no-ignore-exceptions", false);
+    Wvalue<bool> d_recursion_bounds_var(d_recursion_bounds, d_options, "recursion-bounds", true);
+    Wvalue<bool> d_no_recursion_bounds_var(d_recursion_bounds, d_options, "no-recursion-bounds", false);
+    Wvalue<bool> d_ignore_exceptions_var(d_ignore_exceptions, d_options, "ignore-exceptions", true);
+    Wvalue<bool> d_no_ignore_exceptions_var(d_ignore_exceptions, d_options, "no-ignore-exceptions", false);
     
-    Command_Line_Var<W_SPECIALIZATION> d_options_var(d_options, { "D" }, true);
+    Var<WSpecialization> d_options_var(d_options, { "D" }, true);
     
-    Command_Line_Var<char> regular_c_string_var(regular_c_string, { "f", "file", "filename" }, true, 100);
-    Command_Line_Var<unsigned int> redundancy_of_this_README_var(redundancy_of_this_README, { "r", "redundancy" }, true);
-    non_options = ARGS_PARSER::parse(argc, argv);
+    Var<char> regular_c_string_var(regular_c_string, { "f", "file", "filename" }, true, 100);
+    Var<unsigned int> redundancy_of_this_README_var(redundancy_of_this_README, { "r", "redundancy" }, true);
+    non_options = Parser::parse(argc, argv);
   }
   
   // Other code. At this point, all variables are set.
 }
 ```
-This might look a little daunting, but bear in mind that we're linking somewhere around twenty flags to twelve variables while imposing a superstucture on the flags by using multiple `W_SPECIALIZATION`s. Four of these links come from setting `w_type` alone. It's also now to around three lines per variable, which isn't that much of an increase.
+This might look a little daunting, but bear in mind that we're linking somewhere around twenty flags to twelve variables while imposing a superstucture on the flags by using multiple `WSpecialization`s. Four of these links come from setting `w_type` alone. It's also now to around three lines per variable, which isn't that much of an increase.
 
 ### Adding Your Own Extensions
-You can implement more complex parsing by defining your own class or struct and overriding the template for a `Command_Line_Var` and writing your own version of `set_base_variable`. Below is the template specialization for `char` which allows it to act like a `char *`:
+You can implement more complex parsing by defining your own class or struct and overriding the template for a `Var` and writing your own version of `set_base_variable`. Below is the template specialization for `char` which allows it to act like a `char *`:
 
 ```cpp
 // args_parser_templates.h
 
 template<>
-class Command_Line_Var<char> : public Command_Line_Var_Interface {
+class Var<char> : public Var_Interface {
 private:
         int buffer_size;
 public:
-        Command_Line_Var(void * b_v, std::vector<const char *> a, bool ta, int b_s);
+        Var(void * b_v, std::vector<const char *> a, bool ta, int b_s);
         virtual void set_base_variable(const char * b_v);
 };
 
@@ -391,9 +394,9 @@ public:
 
 // Other code
 
-inline Command_Line_Var<char>::Command_Line_Var(void * b_v, std::vector<const char *> a, bool ta, int b_s) : Command_Line_Var_Interface(b_v, a, ta), buffer_size(b_s) {}
+inline Var<char>::Var(void * b_v, std::vector<const char *> a, bool ta, int b_s) : Var_Interface(b_v, a, ta), buffer_size(b_s) {}
 
-inilne void Command_Line_Var<char>::set_base_variable(const char * b_v) {
+inilne void Var<char>::set_base_variable(const char * b_v) {
         char * base_variable_string = (char *)base_variable;
         int i = 0;
         while (b_v[i] != '\0' && i < buffer_size) {
@@ -405,8 +408,8 @@ inilne void Command_Line_Var<char>::set_base_variable(const char * b_v) {
 ```
 
 Note that:
--   The template specialization for `char` extends `public Command_Line_Var_Interface`.
--   It includes a new variable `buffer_size`, which prevents it from going beyond its buffer. Because it has more variables than a `Command_Line_Var_Interface`, it needs to define its own constructor. Normally, if you don't have extra variables or don't need to do anything besides setting variables in the constructor, you don't need to define a constructor.
+-   The template specialization for `char` extends `public Var_Interface`.
+-   It includes a new variable `buffer_size`, which prevents it from going beyond its buffer. Because it has more variables than a `Var_Interface`, it needs to define its own constructor. Normally, if you don't have extra variables or don't need to do anything besides setting variables in the constructor, you don't need to define a constructor.
 -   `set_base_variable` is a virtual function takes in a `const char *` and returns `void`. This function must be implemented to make the template specialization behave differently.
 
 To specialize the template, you must include the header file `args_parser_templates.h`.
@@ -427,7 +430,7 @@ To specialize the template, you must include the header file `args_parser_templa
         
     2.  Other examples will come up whenever I encounter more errors.
 
-5.  See if I can't move `base_variable` from `Command_Line_Var_Interface` to the templated subclass of `Command_Line_Var`, which would really just reduce the typecast.
+5.  See if I can't move `base_variable` from `Var_Interface` to the templated subclass of `Var`, which would really just reduce the typecast.
 
     1.  Not really a priority.
     
@@ -438,7 +441,7 @@ To specialize the template, you must include the header file `args_parser_templa
     2.  It is not a good idea for me to try to implement all the flags for `gcc`, but it does have a more complex parsing algorithm I could try to simulate at least part of.
 
 ## Goals Completed
-1.  Added ability to create a vector of arguments passed to a flag by creating `Command_Line_Vector`s.
+1.  Added ability to create a vector of arguments passed to a flag by creating `Vector`s.
 
 2.  Add autogenerated help.
 
@@ -450,7 +453,7 @@ To specialize the template, you must include the header file `args_parser_templa
 
 5.  Add example of template class specialization as specified in the section in test program.
 
-6.  Single `char` arguments work. You could now type something like ```Command_Line_Var<char> single_char_var(single_char, { "A", "a", "B", "b" }, false)``` and it will work.
+6.  Single `char` arguments work. You could now type something like ```Var<char> single_char_var(single_char, { "A", "a", "B", "b" }, false)``` and it will work.
 
 7.  Fix segmentation fault from having ignored flag in list of flags.
 

@@ -1,41 +1,41 @@
-#ifndef W_SPECIALIZATION_H
-#define W_SPECIALIZATION_H
+#ifndef WSpecialization_H
+#define WSpecialization_H
 #include "args_parser_templates.h"
 #include "hash_table.h"
 #include <stdexcept>
 #include <vector>
-
-class W_INTERFACE;
+namespace cpp_cli{
+class WInterface;
 
 // Named after the -W flag of gcc
-class W_SPECIALIZATION {
-friend class W_INTERFACE;
-friend class Command_Line_Var<W_SPECIALIZATION>;
+class WSpecialization {
+friend class WInterface;
+friend class Var<WSpecialization>;
 private:
-	Hash_Table<W_INTERFACE> setters;
+	Hash_Table<WInterface> setters;
 public:
-	W_SPECIALIZATION(size_t initial_size) :	setters(Hash_Table<W_INTERFACE>(initial_size)) {}
-	W_INTERFACE * operator[](const char * flag) {
+	WSpecialization(size_t initial_size) :	setters(Hash_Table<WInterface>(initial_size)) {}
+	WInterface * operator[](const char * flag) {
 		return setters[flag];
 	}
 };
 
-class W_INTERFACE {
+class WInterface {
 protected:
 	void * base_variable;
 public:
-	W_INTERFACE(void * b_v, W_SPECIALIZATION & w_s, const char * alias) : base_variable(b_v) {
+	WInterface(void * b_v, WSpecialization & w_s, const char * alias) : base_variable(b_v) {
 		w_s.setters.insert(alias, this);
 	}
 	virtual void set_base_variable(const char * flag) = 0;
 };
 
 template <typename T>
-class W_VALUE : public W_INTERFACE {
+class Wvalue : public WInterface {
 private:
 	T value;
 public:
-	W_VALUE(T & b_v, W_SPECIALIZATION & w_s, const char * flag, T v) : W_INTERFACE(&b_v, w_s, flag), value(v) {}
+	Wvalue(T & b_v, WSpecialization & w_s, const char * flag, T v) : WInterface(&b_v, w_s, flag), value(v) {}
 	virtual void set_base_variable(const char * flag) {
 		if (flag[0] != '\0') {
 			throw std::invalid_argument("Flag does not require arguments.");
@@ -45,20 +45,20 @@ public:
 };
 
 template <typename T>
-class W_ARG : public W_INTERFACE {
+class Warg : public WInterface {
 public:
-	W_ARG(T & b_v, W_SPECIALIZATION & w_s, const char * alias) : W_INTERFACE(&b_v, w_s, alias) {}
+	Warg(T & b_v, WSpecialization & w_s, const char * alias) : WInterface(&b_v, w_s, alias) {}
 	virtual void set_base_variable(const char * arg) {
 		*(T *)base_variable = arg;
 	}
 };
 
 template<>
-class W_ARG<char> : public W_INTERFACE {
+class Warg<char> : public WInterface {
 private:
 	int buffer_size;
 public:
-	W_ARG(char * b_v, W_SPECIALIZATION & w_s, const char * alias, int b_s) : W_INTERFACE(b_v, w_s, alias), buffer_size(b_s) {}
+	Warg(char * b_v, WSpecialization & w_s, const char * alias, int b_s) : WInterface(b_v, w_s, alias), buffer_size(b_s) {}
 	virtual void set_base_variable(const char * arg) {
 		char * base_variable_string = (char *)base_variable;
 		int i = 0;
@@ -71,7 +71,7 @@ public:
 };
 
 template<>
-inline void Command_Line_Var<W_SPECIALIZATION>::set_base_variable(const char * flag) {
+inline void Var<WSpecialization>::set_base_variable(const char * flag) {
 	int split_location = 0;
 	char temp_flag[1024];
 	for (; flag[split_location] != '\0'; split_location++) {
@@ -83,7 +83,7 @@ inline void Command_Line_Var<W_SPECIALIZATION>::set_base_variable(const char * f
 		}
 		temp_flag[split_location + 1] = '\0';
 	}
-	if (((W_SPECIALIZATION *)base_variable)->setters.count(temp_flag) == 0) {
+	if (((WSpecialization *)base_variable)->setters.count(temp_flag) == 0) {
 		char error_message_buffer[] = "Option does not exist: -W\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
 		error_message_buffer[24] = aliases[0][0]; 
 		for (int i = 0; i <= 32 && temp_flag[i] != '\0'; i++) {
@@ -91,52 +91,52 @@ inline void Command_Line_Var<W_SPECIALIZATION>::set_base_variable(const char * f
 		}
 		throw std::invalid_argument(error_message_buffer);
 	}
-	((W_SPECIALIZATION *)base_variable)->setters[temp_flag]->set_base_variable(flag + split_location);
+	((WSpecialization *)base_variable)->setters[temp_flag]->set_base_variable(flag + split_location);
 }
 
 template<>
-inline void W_ARG<int>::set_base_variable(const char * b_v) {
+inline void Warg<int>::set_base_variable(const char * b_v) {
 	*(int *)base_variable = strtol(b_v, nullptr, 10);
 }
 
 template<>
-inline void W_ARG<unsigned int>::set_base_variable(const char * b_v) {
+inline void Warg<unsigned int>::set_base_variable(const char * b_v) {
 	*(unsigned int *)base_variable = strtoul(b_v, nullptr, 10);
 }
 
 template<>
-inline void W_ARG<long>::set_base_variable(const char * b_v) {
+inline void Warg<long>::set_base_variable(const char * b_v) {
 	*(long *)base_variable = strtol(b_v, nullptr, 10);
 }
 
 template<>
-inline void W_ARG<unsigned long>::set_base_variable(const char * b_v) {
+inline void Warg<unsigned long>::set_base_variable(const char * b_v) {
 	*(unsigned long *)base_variable = strtoul(b_v, nullptr, 10);
 }
 
 template<>
-inline void W_ARG<long long>::set_base_variable(const char * b_v) {
+inline void Warg<long long>::set_base_variable(const char * b_v) {
 	*(long long *)base_variable = strtoll(b_v, nullptr, 10);
 }
 
 template<>
-inline void W_ARG<unsigned long long>::set_base_variable(const char * b_v) {
+inline void Warg<unsigned long long>::set_base_variable(const char * b_v) {
 	*(unsigned long long *)base_variable = strtoull(b_v, nullptr, 10);
 }
 
 template<>
-inline void W_ARG<float>::set_base_variable(const char * b_v) {
+inline void Warg<float>::set_base_variable(const char * b_v) {
 	*(float *)base_variable = strtof(b_v, nullptr);
 }
 
 template<>
-inline void W_ARG<double>::set_base_variable(const char * b_v) {
+inline void Warg<double>::set_base_variable(const char * b_v) {
 	*(double *)base_variable = strtod(b_v, nullptr);
 }
 
 template<>
-inline void W_ARG<long double>::set_base_variable(const char * b_v) {
+inline void Warg<long double>::set_base_variable(const char * b_v) {
 	*(long double *)base_variable = strtold(b_v, nullptr);
 }
-
+}
 #endif

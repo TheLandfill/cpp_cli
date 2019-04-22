@@ -16,36 +16,37 @@ struct Main_Subcommand_Variables {
 };
 
 int main(int argc, char ** argv) {
+	using namespace cpp_cli;
 	Main_Subcommand_Variables msv;
-	Command_Line_Var<std::string> file_path_var(msv.file_path, { "path", "p" }, true, "Dummy variable.");
-	Command_Line_Var<char> verbosity_var(msv.verbosity, { "v" }, false, 20, "Dummy variable.");
-	Command_Line_Value<bool> help_var(help, { "h", "help" }, true, "Prints this help message and exits.");
+	Var<std::string> file_path_var(msv.file_path, { "path", "p" }, true, "Dummy variable.");
+	Var<char> verbosity_var(msv.verbosity, { "v" }, false, 20, "Dummy variable.");
+	Value<bool> help_var(help, { "h", "help" }, true, "Prints this help message and exits.");
 	
-	ARGS_PARSER::add_subcommand("pull", pull_prog, "Does something like 'git pull' if this program actually did anything.");
-	ARGS_PARSER::add_subcommand("push", push_prog, "Does something like 'git push' if this program actually did anything.");
+	Parser::add_subcommand("pull", pull_prog, "Does something like 'git pull' if this program actually did anything.");
+	Parser::add_subcommand("push", push_prog, "Does something like 'git push' if this program actually did anything.");
 
-	ARGS_PARSER::set_help_file_path("/usr/nonlocal/physics/");
+	Parser::set_help_file_path("");
 
-	ARGS_PARSER::set_usage("[options/non-options] [subcommand]\n\t\t[subcommand's options/non-options] [subcommand's subcommand]\n\n"
+	Parser::set_usage("[options/non-options] [subcommand]\n\t\t[subcommand's options/non-options] [subcommand's subcommand]\n\n"
 	"Since this program kind of uses recursion when dealing with subcommands, the general pattern of [command] [command's options/non-options] [subcommand] is"
 	" repeated, which each subcommand acting like a completely new command with its own options and subcommands.");
 
-	ARGS_PARSER::set_header("This program serves mainly to demonstrate how subcommands work in the library. "
+	Parser::set_header("This program serves mainly to demonstrate how subcommands work in the library. "
 	"Essentially, each subcommand acts just like you wrote the program for the subcommand completely on its own without any "
 	"knowledge of any supercommands or sibling commands except what information their supercommand passes to them, global variables, and the "
 	"header, usage, and footers of their supercommands unless you change them. Changing them will have no effect on the help message of the "
-	"supercommand, since you can only generate the help message before running 'ARGS_PARSER::parse'. "
+	"supercommand, since you can only generate the help message before running 'Parser::parse'. "
 	"In this case, 'push' and 'pull' are sibling commands, with both being subcommands to the main program, and 'push' has its own subcommand 'test'. "
 	"Furthermore, they all have their own flags completely independent from any other subcommands.");
 	
-	ARGS_PARSER::set_footer("For more information, contact me at the.landfill.coding@gmail.com or on the github page. You could also put your version information stuff here, which would be cool.");
+	Parser::set_footer("For more information, contact me at the.landfill.coding@gmail.com or on the github page. You could also put your version information stuff here, which would be cool.");
 
-	ARGS_PARSER::generate_help(argv[0]);
+	Parser::generate_help(argv[0]);
 
-	msv.non_options = ARGS_PARSER::parse(argc, argv, &msv);
+	msv.non_options = Parser::parse(argc, argv, &msv);
 
 	if (help) {
-		ARGS_PARSER::print_help();
+		Parser::print_help();
 		return 0;
 	}
 
@@ -63,15 +64,16 @@ int main(int argc, char ** argv) {
 }
 
 void push_prog(int argc, char ** argv, void * data) {
+	using namespace cpp_cli;
 	Main_Subcommand_Variables * fixed_data = static_cast<Main_Subcommand_Variables*>(data);
 	std::string URL = "";
-	Command_Line_Var<std::string> URL_var(URL, { "u", "URL" }, true, "Sets the URL.");
-	Command_Line_Value<bool> help_var(help, { "h", "help" }, true, "Displays this help message and exits.");
+	Var<std::string> URL_var(URL, { "u", "URL" }, true, "Sets the URL.");
+	Value<bool> help_var(help, { "h", "help" }, true, "Displays this help message and exits.");
 
-	ARGS_PARSER::add_subcommand("test", test_prog);
-	ARGS_PARSER::generate_help(argv[0]);
+	Parser::add_subcommand("test", test_prog);
+	Parser::generate_help(argv[0]);
 	try {
-		ARGS_PARSER::parse(argc, argv, &URL);
+		Parser::parse(argc, argv, &URL);
 	} catch (std::invalid_argument& e) {
 		std::cerr << "INVALID ARGUMENT FOR SUBCOMMAND PUSH" << std::endl;
 		throw;
@@ -92,15 +94,16 @@ void push_prog(int argc, char ** argv, void * data) {
 }
 
 void pull_prog(int argc, char ** argv, void * data) {
+	using namespace cpp_cli;
 	(void)data;
 	std::string URL = "";
 	unsigned long long timeout = 100;
-	Command_Line_Var<std::string> URL_var(URL, { "u", "URL" }, true, "Sets the URL.");
-	Command_Line_Var<unsigned long long> timeout_var(timeout, { "t", "timeout" }, true, "Sets the amount of time before a timeout.");
-	Command_Line_Value<bool> help_var(help, { "h", "help" }, true, "Displays this help message and exits.");
-	ARGS_PARSER::generate_help(argv[0]);
+	Var<std::string> URL_var(URL, { "u", "URL" }, true, "Sets the URL.");
+	Var<unsigned long long> timeout_var(timeout, { "t", "timeout" }, true, "Sets the amount of time before a timeout.");
+	Value<bool> help_var(help, { "h", "help" }, true, "Displays this help message and exits.");
+	Parser::generate_help(argv[0]);
 	try {
-		ARGS_PARSER::parse(argc, argv, nullptr);
+		Parser::parse(argc, argv, nullptr);
 	} catch (std::invalid_argument& e) {
 		std::cerr << "INVALID ARGUMENT FOR SUBCOMMAND PULL" << std::endl;
 		throw;
@@ -120,19 +123,20 @@ void pull_prog(int argc, char ** argv, void * data) {
 }
 
 void test_prog(int argc, char ** argv, void * data) {
+	using namespace cpp_cli;
 	int underwear_count = 0;
 	double EURL = -1;
 
-	Command_Line_Var<int> underwear_count_var(underwear_count, { "u" }, true, "Sets the number of underwear currently available. Note that this has no idea that '-u' corresponded to the URL variable in the push subcommand.");
-	Command_Line_Var<double> EURL_var(EURL, { "e", "E", "EURL", "URL" }, true, "Sets the value of EURL. Note that '--URL' and '-u' correspond to completely different variables.");
-	Command_Line_Value<bool> help_var(help, { "h", "help" }, true, "Displays this help message and exits.");
+	Var<int> underwear_count_var(underwear_count, { "u" }, true, "Sets the number of underwear currently available. Note that this has no idea that '-u' corresponded to the URL variable in the push subcommand.");
+	Var<double> EURL_var(EURL, { "e", "E", "EURL", "URL" }, true, "Sets the value of EURL. Note that '--URL' and '-u' correspond to completely different variables.");
+	Value<bool> help_var(help, { "h", "help" }, true, "Displays this help message and exits.");
 
-	ARGS_PARSER::set_usage("\n\tTest.");
+	Parser::set_usage("\n\tTest.");
 
-	ARGS_PARSER::set_header("I'm just changing this to show you that changing any of these help message variables does nothing to any other help message.");
+	Parser::set_header("I'm just changing this to show you that changing any of these help message variables does nothing to any other help message.");
 
-	ARGS_PARSER::generate_help(argv[0]);
-	ARGS_PARSER::parse(argc, argv, nullptr);
+	Parser::generate_help(argv[0]);
+	Parser::parse(argc, argv, nullptr);
 
 	if (help) {
 		return;

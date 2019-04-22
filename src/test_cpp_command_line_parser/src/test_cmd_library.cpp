@@ -4,6 +4,7 @@
 #include <string>
 
 int main(int argc, char ** argv) {
+	using namespace cpp_cli;
 	std::string filename = "a.out";
 	int recursion_level = -1;
 	char flag = '\0';
@@ -22,7 +23,7 @@ int main(int argc, char ** argv) {
 	// command line.
 	std::vector<const char *> non_options;
 
-	// This scoping is just to automatically delete the Command_Line_Vars after
+	// This scoping is just to automatically delete the Vars after
 	// they are no longer necessary. They need to be in accessable in the same
 	// scope as when hash is called.
 	{
@@ -33,35 +34,35 @@ int main(int argc, char ** argv) {
 
 		char footer[] = "For more information, contact me at the.landfill.coding@gmail.com or on the github page. You could also put your version information stuff here, which would be cool.";
 		
-		ARGS_PARSER::set_header(header);
-		ARGS_PARSER::set_usage(usage);
-		ARGS_PARSER::set_footer(footer);
+		Parser::set_header(header);
+		Parser::set_usage(usage);
+		Parser::set_footer(footer);
 
 		// The help file path must be set or else the program will throw an
 		// exception. The help file path must also be a valid, writable path.
 		// "" just means current directory. Do not use relative paths unless
 		// you only plan on running it from a single folder.
-		ARGS_PARSER::set_help_file_path("");
+		Parser::set_help_file_path("");
 
-		Command_Line_Var<std::string> file_var(filename, { "f", "file", "filename" }, true, "Determines the file to be read. In this program, though, it doesn't do anything.");
-		Command_Line_Var<int> recursion_var(recursion_level, { "r", "recursion", "max-depth" }, true, "Determines the maximum level of recursion allowed before nothing happens because this is a test program.");
-		Command_Line_Var<std::string> flag2_var(flag2, { "flag2", "d" }, false, "This is just a standard flag variable using some moderately deprecated syntax.");
-		Command_Line_Var<double> probability_of_success_var(probability_of_success, { "p", "prob", "probability" }, true, "Sets the probability of this program working properly, which is mostly dependent on whether or not I forgot a minor syntax error.");
-		Command_Line_Var<char> verbosity_var(verbosity, { "v" }, false, 20, "This is a standard verbosity variable that is supposed to set increasing levels of verbosity, so -v would mean be a little verbose, -vvvv would mean be very verbose, etc.");
+		Var<std::string> file_var(filename, { "f", "file", "filename" }, true, "Determines the file to be read. In this program, though, it doesn't do anything.");
+		Var<int> recursion_var(recursion_level, { "r", "recursion", "max-depth" }, true, "Determines the maximum level of recursion allowed before nothing happens because this is a test program.");
+		Var<std::string> flag2_var(flag2, { "flag2", "d" }, false, "This is just a standard flag variable using some moderately deprecated syntax.");
+		Var<double> probability_of_success_var(probability_of_success, { "p", "prob", "probability" }, true, "Sets the probability of this program working properly, which is mostly dependent on whether or not I forgot a minor syntax error.");
+		Var<char> verbosity_var(verbosity, { "v" }, false, 20, "This is a standard verbosity variable that is supposed to set increasing levels of verbosity, so -v would mean be a little verbose, -vvvv would mean be very verbose, etc.");
 
-		// Command_Line_Value s set the variable to the third argument.
+		// Value s set the variable to the third argument.
 		// If --flag or -a is passed, flag will be set to 'a'. If --no-flag or
 		// -b is passed, flag will be set to 'b'.
-		Command_Line_Value<char> flag_var0(flag, { "flag", "a" }, 'a', "This uses the improved Command_Line_Value syntax to make sure that multiple flags set a variable to the same flag. Notice that it is of 'char' type and that flag is not an array.");
-		Command_Line_Value<char> flag_var1(flag, { "no-flag", "b" }, 'b', "Same as --flag, -a, except it will set the flag variable to a different value.");
-		Command_Line_Value<char> flag_var2(flag, { "some-flag", "c" }, 'c', "Same as --flag, -a, except it will set the flag variable to a different value.");
+		Value<char> flag_var0(flag, { "flag", "a" }, 'a', "This uses the improved Value syntax to make sure that multiple flags set a variable to the same flag. Notice that it is of 'char' type and that flag is not an array.");
+		Value<char> flag_var1(flag, { "no-flag", "b" }, 'b', "Same as --flag, -a, except it will set the flag variable to a different value.");
+		Value<char> flag_var2(flag, { "some-flag", "c" }, 'c', "Same as --flag, -a, except it will set the flag variable to a different value.");
 
 		// Generally, the solitary hyphen flag is used to indicate that the
 		// program should take in standard input. The library will tell you that
 		// someone typed a hyphen, and it is up to you to determine what you
 		// want to do with it. It is not necessary to do anything with it. If
 		// Unless you do something with it, the hyphen will be ignored.
-		Command_Line_Var<std::string> standard_input_hyphen_var(standard_input_hyphen, { "-" }, false, "This is just a standard input hyphen, which normally means that your program wants to take in user input from stdin. It's only here to demonstrate that this library can parse it.");
+		Var<std::string> standard_input_hyphen_var(standard_input_hyphen, { "-" }, false, "This is just a standard input hyphen, which normally means that your program wants to take in user input from stdin. It's only here to demonstrate that this library can parse it.");
 
 		// This will put any argument starting with "-l" or "--library" into
 		// non_options, even though it's still an option, as its order matters.
@@ -69,27 +70,27 @@ int main(int argc, char ** argv) {
 		// have to take template specializations into account, such as char.
 		// You should also set takes_args to be true, or else its position does
 		// not matter.
-		Command_Line_Var<int> ignored_flag_var(nullptr, { "l", "library" }, true, "Flag that corresponds to gcc's -l flag. It is a position dependent flag.");
+		Var<int> ignored_flag_var(nullptr, { "l", "library" }, true, "Flag that corresponds to gcc's -l flag. It is a position dependent flag.");
 
-		// Having the same flag refer to two different Command_Line_Vars will
+		// Having the same flag refer to two different Vars will
 		// cause the program to fail and tell you which flag.
-		// Command_Line_Var<int> breaks_program(nullptr, { "l" }, false);
+		// Var<int> breaks_program(nullptr, { "l" }, false);
 
-		Command_Line_Value<bool> help_var(help, { "h", "help" }, true, "Prints this help message and exits.");
+		Value<bool> help_var(help, { "h", "help" }, true, "Prints this help message and exits.");
 
-		Command_Line_Vector<int> list_of_ints_var(list_of_ints, { "i", "list" }, "Just here to demonstrate that it can deal with vectors of arguments.");
-		Command_Line_Vector<const char *> list_of_declarations_var(list_of_declarations, { "D" }, "Just here to demonstrate that const char *'s work.");
+		Vector<int> list_of_ints_var(list_of_ints, { "i", "list" }, "Just here to demonstrate that it can deal with vectors of arguments.");
+		Vector<const char *> list_of_declarations_var(list_of_declarations, { "D" }, "Just here to demonstrate that const char *'s work.");
 
-		ARGS_PARSER::generate_help(argv[0]);
+		Parser::generate_help(argv[0]);
 
 		// Non options must be declared outside the scope unless you don't
 		// need to use them.
-		non_options = ARGS_PARSER::parse(argc, argv);
+		non_options = Parser::parse(argc, argv);
 	}
 
 	// This section just prints out the values to demonstrate that hash worked.
 	if (help) {
-		ARGS_PARSER::print_help();
+		Parser::print_help();
 	} else {
 		std::cout << "filename:\t" << filename << std::endl;
 		std::cout << "recursion:\t" << recursion_level << std::endl;

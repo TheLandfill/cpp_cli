@@ -5,7 +5,7 @@
 #include <string>
 
 int main(int argc, char ** argv) {
-
+	using namespace cpp_cli;
 	std::string filename = "a.out";
 	int recursion_level = -1;
 	std::string flag = "false";
@@ -32,40 +32,40 @@ int main(int argc, char ** argv) {
 	bool help = false;
 	
 	{
-		Command_Line_Var<std::string> file_var(filename, { "f", "file", "filename" }, true, "Dummy variable corresponding to some sort of file name, usually either and input or an output file.");
-		Command_Line_Var<int> recursion_var(recursion_level, { "r", "recursion", "max-depth" }, true, "Dummy variable corresponding to some sort of recursion restriction.");
-		Command_Line_Var<std::string> flag_var(flag, { "flag", "a" }, false, "Still just a deprecated use of the Command_Line_Var for flags.");
-		Command_Line_Var<std::string> flag2_var(flag2, { "flag2", "b" }, false, "Another deprectated example.");
-		Command_Line_Var<double> probability_of_success_var(probability_of_success, { "p", "prob", "probability" }, true, "Determines the probability that this program will work.");
-		Command_Line_Var<char> verbosity_var(verbosity, { "v" }, false, 20, "Dummy variable that corresponds to an option to set the verbosity.");
-		Command_Line_Var<std::string> standard_input_hyphen_var(standard_input_hyphen, { "-" }, false, "Just here to show that the standard input hyphen still works with all the W_specialization stuff.");
-		Command_Line_Var<int> ignored_flag_var(nullptr, { "l", "library" }, true, "I copied these from an earlier test program.");
+		Var<std::string> file_var(filename, { "f", "file", "filename" }, true, "Dummy variable corresponding to some sort of file name, usually either and input or an output file.");
+		Var<int> recursion_var(recursion_level, { "r", "recursion", "max-depth" }, true, "Dummy variable corresponding to some sort of recursion restriction.");
+		Var<std::string> flag_var(flag, { "flag", "a" }, false, "Still just a deprecated use of the Var for flags.");
+		Var<std::string> flag2_var(flag2, { "flag2", "b" }, false, "Another deprectated example.");
+		Var<double> probability_of_success_var(probability_of_success, { "p", "prob", "probability" }, true, "Determines the probability that this program will work.");
+		Var<char> verbosity_var(verbosity, { "v" }, false, 20, "Dummy variable that corresponds to an option to set the verbosity.");
+		Var<std::string> standard_input_hyphen_var(standard_input_hyphen, { "-" }, false, "Just here to show that the standard input hyphen still works with all the W_specialization stuff.");
+		Var<int> ignored_flag_var(nullptr, { "l", "library" }, true, "I copied these from an earlier test program.");
 
-		Command_Line_Var<char> single_char_test_var(single_char_test, { "c", "C", "x", "X" }, false, "This is right here is the main reason I still require you to tell me if the flag takes arguments, as a Command_Line_Value requires one line per variable.");
+		Var<char> single_char_test_var(single_char_test, { "c", "C", "x", "X" }, false, "This is right here is the main reason I still require you to tell me if the flag takes arguments, as a Value requires one line per variable.");
 
-		// YOU DO NOT NEED TO USE W_SPECIALIZATIONS, W_VALUES, or W_ARGS
-		W_SPECIALIZATION w_options(100);
-		W_VALUE<bool> w_sign_conversion_var(w_sign_conversion, w_options, "sign-conversion", true);
-		W_VALUE<bool> w_no_sign_conversion_var(w_sign_conversion, w_options, "no-sign-conversion" , false);
-		W_VALUE<bool> w_all_var(w_all, w_options, "all", true);
-		W_VALUE<bool> w_extra_var(w_extra, w_options, "extra", true);
-		W_VALUE<char> w_type_a_var(w_type, w_options, "file", 'f');
-		W_VALUE<char> w_type_b_var(w_type, w_options, "dir", 'd');
-		W_VALUE<char> w_type_c_var(w_type, w_options, "link", 'l');
-		W_VALUE<char> w_type_d_var(w_type, w_options, "any", 'a');
-		W_ARG<int> w_error_level_var(w_error_level, w_options, "error-level");
-		W_ARG<int> w_warning_level_var(w_warning_level, w_options, "warning-level");
-		Command_Line_Var<W_SPECIALIZATION> w_options_var(w_options, { "W" }, true, "Only the -W main argument has a help message at this point because these options are better documented outside of a simple help message.");
+		// YOU DO NOT NEED TO USE WSpecializationS, WvalueS, or WargS
+		WSpecialization w_options(100);
+		Wvalue<bool> w_sign_conversion_var(w_sign_conversion, w_options, "sign-conversion", true);
+		Wvalue<bool> w_no_sign_conversion_var(w_sign_conversion, w_options, "no-sign-conversion" , false);
+		Wvalue<bool> w_all_var(w_all, w_options, "all", true);
+		Wvalue<bool> w_extra_var(w_extra, w_options, "extra", true);
+		Wvalue<char> w_type_a_var(w_type, w_options, "file", 'f');
+		Wvalue<char> w_type_b_var(w_type, w_options, "dir", 'd');
+		Wvalue<char> w_type_c_var(w_type, w_options, "link", 'l');
+		Wvalue<char> w_type_d_var(w_type, w_options, "any", 'a');
+		Warg<int> w_error_level_var(w_error_level, w_options, "error-level");
+		Warg<int> w_warning_level_var(w_warning_level, w_options, "warning-level");
+		Var<WSpecialization> w_options_var(w_options, { "W" }, true, "Only the -W main argument has a help message at this point because these options are better documented outside of a simple help message.");
 
-		W_SPECIALIZATION d_options(100);
-		W_VALUE<bool> d_ignore_parentheses_var(d_ignore_parentheses, d_options, "ignore-parentheses", true);
-		W_VALUE<bool> d_allow_infinite_recursion_var(d_allow_infinite_recursion, d_options, "allow-infinite-recursion", true);
-		W_VALUE<bool> d_no_infinite_recursion_var(d_allow_infinite_recursion, d_options, "no-infinite-recursion", false);
-		W_ARG<std::string> d_configuration_name_var(d_configuration_name, d_options, "config");
-		W_ARG<int> d_debug_level_var(d_debug_level, d_options, "level");
-		Command_Line_Var<W_SPECIALIZATION> d_options_var(d_options, { "D" }, true, "Just here for fun.");
+		WSpecialization d_options(100);
+		Wvalue<bool> d_ignore_parentheses_var(d_ignore_parentheses, d_options, "ignore-parentheses", true);
+		Wvalue<bool> d_allow_infinite_recursion_var(d_allow_infinite_recursion, d_options, "allow-infinite-recursion", true);
+		Wvalue<bool> d_no_infinite_recursion_var(d_allow_infinite_recursion, d_options, "no-infinite-recursion", false);
+		Warg<std::string> d_configuration_name_var(d_configuration_name, d_options, "config");
+		Warg<int> d_debug_level_var(d_debug_level, d_options, "level");
+		Var<WSpecialization> d_options_var(d_options, { "D" }, true, "Just here for fun.");
 
-		Command_Line_Value<bool> help_var(help, { "help", "h" }, true, "Displays this help message and exits.");
+		Value<bool> help_var(help, { "help", "h" }, true, "Displays this help message and exits.");
 
 		const char * header = "This program will basically show you that this library can emulate gcc's -W flag for multiple variables."
 		" While I'm here, I might as well show you that your compiler will concatenate string literals if you put them in sequence, "
@@ -78,19 +78,19 @@ int main(int argc, char ** argv) {
 		const char * footer = "For more information, contact me at the.landfill.coding@gmail.com or on the github page. You could also put your version information"
 		" stuff here, which would be cool.";
 		
-		ARGS_PARSER::set_header(header);
-		ARGS_PARSER::set_usage(usage);
-		ARGS_PARSER::set_footer(footer);
-		ARGS_PARSER::set_help_width(90);
-		ARGS_PARSER::set_help_file_path("");
+		Parser::set_header(header);
+		Parser::set_usage(usage);
+		Parser::set_footer(footer);
+		Parser::set_help_width(90);
+		Parser::set_help_file_path("");
 
-		ARGS_PARSER::generate_help(argv[0]);
+		Parser::generate_help(argv[0]);
 
-		non_options = ARGS_PARSER::parse(argc, argv);
+		non_options = Parser::parse(argc, argv);
 	}
 
 	if (help) {
-		ARGS_PARSER::print_help();
+		Parser::print_help();
 		return 0;
 	}
 
