@@ -25,6 +25,10 @@ Var<T> generic_syntax(T& variable_to_set, std::vector<const char *> aliases, boo
 Value<T> generic_syntax(T& variable_to_set, std::vector<const char *> aliases, T value_to_set_variable, const char * help_mess = "");
 Vector<T> generic_syntax(std::vector<T>& vector_to_add_to, std::vector<const char * aliases>, const char * help_mess = "");
 
+// template specialization for a char * requires you to provide buffer length
+// std::string uses the generic syntax
+Var<char> char_array_syntax(char * array, std::vector<const char *> aliases, bool takes_args, int buffer_length, const char * help_message);
+
 Parser::add_subcommand(const char * name_of_subcommand, subcommand, const char * help_mess = "");
 // subcommand is a function of type "void function(int argc, char ** argv, void * data)"
 
@@ -88,7 +92,7 @@ While the source code itself is standard c++11, the test program's Makefile uses
 	    
     2.  [`Value`s](#command_line_values)
     
-    3.  [`Command Line Vector`s](#command_line_vectors)
+    3.  [`Vector`s](#command_line_vectors)
     
     4.  [WSpecialization](#w_specialization)
     
@@ -173,7 +177,7 @@ To create a `Var`/`Value` with a `char *` variable:
 ```cpp
 const int example_string_bf_size = 20;
 char example_string[example_string_bf_size];
-Var<char> example_string_var(example_string, ..., ..., example_string_bf_size);
+Var<char> example_string_var(example_string, ..., ..., example_string_bf_size, optional_help_string);
 ```
 
 Furthermore, you should allocate enough memory to store the longest argument you expect to receive. If you do not, you run the risk of a segmentation fault, and there is nothing the library can do to fix it or notify you that your buffer is too small.
@@ -406,7 +410,14 @@ inilne void Var<char>::set_base_variable(const char * b_v) {
 Note that:
 -   The template specialization for `char` extends `public Var_Interface`.
 -   It includes a new variable `buffer_size`, which prevents it from going beyond its buffer. Because it has more variables than a `Var_Interface`, it needs to define its own constructor. Normally, if you don't have extra variables or don't need to do anything besides setting variables in the constructor, you don't need to define a constructor.
--   `set_base_variable` is a virtual function takes in a `const char *` and returns `void`. This function must be implemented to make the template specialization behave differently.
+-   `set_base_variable` is a virtual function takes in a `const char *` and returns `void`. This function must be implemented to make the template specialization behave differently. You should convert the variable `base_variable` to a pointer to whatever type you're trying to implement.
+
+```cpp
+void Var<T>::set_base_variable(const char * b_v) {
+    T& variable = *(T *)base_variable;
+    // set variable to whatever.
+}
+```
 
 To specialize the template, you must include the header file `args_parser_templates.h`.
 
