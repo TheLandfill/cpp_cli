@@ -2,86 +2,11 @@
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/7f047f6cbe31451f87096d6a64e277fa)](https://www.codacy.com/app/TheLandfill/cpp_cli?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=TheLandfill/cpp_cli&amp;utm_campaign=Badge_Grade)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-cpp_cli is a library designed to make parsing command line arguments for c++ easy, needing only one line per variable you want to set and one line to parse, and efficient, running in linear time with respect to the number of arguments passed to the command line.
+## Quick Version
 
-Currently, this library has a stable release with all the functionality you could want from a CLI library, including subcommand handling and automatic help generation.
+If you just want to get something up and running, read here.
 
-While the source code itself is standard c++11, the test program's Makefile uses the GNU/Linux tools make and g++.
-
-## Table of Contents
-1.  [Why I Wrote This Library](#why-i-wrote-this-library)
-
-2.  [Getting Started](#getting-started)
-    
-    1.  [Prerequisites](#prerequisites)
-    
-    2.  [Install](#install)
-    
-3.  [How to Use](#how-to-use)
-
-    1.  [Syntax of Use](#syntax-of-use)
-    
-4.  [Parsing Rules](#parsing-rules)
-
-    1.  [How Parsing Works With Subcommands](#how-parsing-works-with-subcommands)
-    
-    2.  [Types the Library Can Handle](#types-the-library-can-handle)
-    
-        1.  [How to Handle a `char` Array](#how-to-handle-a-char-array)
-	
-    3.  [Using Options Whose Locations Matter](#using-options-whose-locations-matter)
-    
-5.  [Exception Throwing](#exception-throwing)
-
-6.  [Example Usage](#example-usage)
-
-7.  [Help Message](#help-message)
-
-8.  [More Complex Command Line Parsing](#more-complex-command-line-parsing)
-
-    1.  [Subcommands](#subcommands)
-    
-        1.  [Subcommands Example](#subcommands-example)
-	    
-    2.  [`Value`s](#command_line_values)
-    
-    3.  [`Command Line Vector`s](#command_line_vectors)
-    
-    4.  [WSpecialization](#w_specialization)
-    
-        1.  [WSpecialization Example](#w_specialization-example)
-	
-    5.  [Adding Your Own Extensions](#adding-your-own-extensions)
-    
-9.  [Goals](#goals)
-
-10. [Goals Completed](#goals-completed)
-
-11. [License](#license)
-
-## Why I Wrote This Library
--   Every non-trivial program has to parse command line arguments, which leaves programmers often writing their own parsers for each individual project even though they are often writing the same inefficient, rigid, and unnecessarily complex algorithms.
-
--   In my opinion, current CLI parsers either do far too little, such as GetOpt, or far too much, such as CLI11. Programs should do one thing and do it well. This library takes the data in the command line and puts it into your variables.
-
--   I wanted to contribute to the open source community and familiarize myself with GitHub.
-
--   After actually using some of the other competitors ([CLI11](https://github.com/CLIUtils/CLI11) has a good list) to test how my library stacks up to theirs, I'm starting to remember more why I made this library.
-
-    -   For starters, I don't include half the STL to parse the command line, which keeps executables much smaller than other CLI libraries.
-
-    -   This library is also way more flexible than most other libraries. It understands that its only job is to organize data on the command line so that it becomes much easier for you to read (and also document itself through the automatic help generation).
-
-## Getting Started
-As it currently stands, the entire product is valid c++11 except for the makefiles for compiling the projects.
-
-### Prerequisites
-The library requires nothing but c++11. The test program already has symlinks to the required library and header file.
-
-### Install
-No installation required. Just download the current release and include "cpp_cli.h" in your cpp source code wherever you want to parse the command line.
-
-## How to Use
+### How to Use
 1.  Download the latest release.
 2.  Include "cpp_cli.h" wherever you call any function of Parser.
 3.  Create a new scope (this is just so the local variables you need to create disappear, but it's not necessary).
@@ -91,8 +16,10 @@ No installation required. Just download the current release and include "cpp_cli
 7.  All the variables will be set after hash finishes.
 8.  Any non-flagged argument or ignored argument will be returned in a vector of "non_options" in the order in which they appear in the command line.
 
-### Syntax of Use
+#### Syntax of Use
 ```cpp
+std::vector<const char *> non_options;
+
 using namespace cpp_cli;
 Var<T> generic_syntax(T& variable_to_set, std::vector<const char *> aliases, bool takes_args, const char * help_mess = "")
 Value<T> generic_syntax(T& variable_to_set, std::vector<const char *> aliases, T value_to_set_variable, const char * help_mess = "");
@@ -110,11 +37,92 @@ Parser::set_help_file_path("/usr/local/bin/folder_you_can_access/");
 Parser::generate_help(argv[0]);
 
 // data is an object/literal with data you want to pass to the subcommand.
-Parser::parse(argc, argv, &data);
+non_options = Parser::parse(argc, argv, &data);
 ```
-where `T` is the type of the variable and `variable_name_var` is a stack allocated variable. The first argument to a `Var` is either the variable you want to set, its address (as long as it isn't a `Var<char>`), or a `nullptr`, the second variable is an array/vector of strings corresponding to flags that control the value of the variable, the third argument is a bool that determines whether or not the flags take arguments themselves, and the last argument is an optional help message. The only difference between a `Value` and a `Var` is that the third argument is what you want the variable to be set to if the flag is found instead of a bool that determines whether the flag takes an argument, since `Value`s do not take arguments. `Vector`s take in a vector of type `T` and only take three arguments instead of four like a `Var` or a `Value`. If you don't provide one, the flags will still show up in the help message so that you don't forget about documenting a flag. To have a set of flags ignored, pass in anything starting with a backtick (\`) for the help message.
+where `T` is the type of the variable and `variable_name_var` is a stack allocated variable. The first argument to a `Var` is either the variable you want to set, its address (as long as it isn't a `Var<char>`), or a `nullptr`, the second variable is an array/vector of strings corresponding to flags that control the value of the variable, the third argument is a bool that determines whether or not the flags take arguments themselves, and the last argument is an optional help message.
+
+The only difference between a `Value` and a `Var` is that the third argument is what you want the variable to be set to if the flag is found instead of a bool that determines whether the flag takes an argument, since `Value`s do not take arguments.
+
+`Vector`s take in a vector of type `T` and only take three arguments instead of four like a `Var` or a `Value`. If you don't provide one, the flags will still show up in the help message so that you don't forget about documenting a flag. To have a set of flags ignored, pass in anything starting with a backtick (\`) for the help message.
 
 If a `nullptr` is provided for the first argument of a Var or Value, the parser will just treat it as if it were a non-option.
+
+## Long Version
+
+cpp_cli is a library designed to make parsing command line arguments for c++ easy, needing only one line per variable you want to set and one line to parse, and efficient, running in linear time with respect to the number of arguments passed to the command line.
+
+Currently, this library has a stable release with all the functionality you could want from a CLI library, including subcommand handling and automatic help generation.
+
+While the source code itself is standard c++11, the test program's Makefile uses the GNU/Linux tools make and g++.
+
+## Table of Contents
+1.  [Why I Wrote This Library](#why-i-wrote-this-library)
+
+2.  [Getting Started](#getting-started)
+    
+    1.  [Prerequisites](#prerequisites)
+    
+    2.  [Install](#install)
+    
+3.  [Parsing Rules](#parsing-rules)
+
+    1.  [How Parsing Works With Subcommands](#how-parsing-works-with-subcommands)
+    
+    2.  [Types the Library Can Handle](#types-the-library-can-handle)
+    
+        1.  [How to Handle a `char` Array](#how-to-handle-a-char-array)
+	
+    3.  [Using Options Whose Locations Matter](#using-options-whose-locations-matter)
+    
+4.  [Exception Throwing](#exception-throwing)
+
+5.  [Example Usage](#example-usage)
+
+6.  [Help Message](#help-message)
+
+7.  [More Complex Command Line Parsing](#more-complex-command-line-parsing)
+
+    1.  [Subcommands](#subcommands)
+    
+        1.  [Subcommands Example](#subcommands-example)
+	    
+    2.  [`Value`s](#command_line_values)
+    
+    3.  [`Command Line Vector`s](#command_line_vectors)
+    
+    4.  [WSpecialization](#w_specialization)
+    
+        1.  [WSpecialization Example](#w_specialization-example)
+	
+    5.  [Adding Your Own Extensions](#adding-your-own-extensions)
+    
+8.  [Goals](#goals)
+
+9.  [Goals Completed](#goals-completed)
+
+10. [License](#license)
+
+## Why I Wrote This Library
+-   Every non-trivial program has to parse command line arguments, which leaves programmers often writing their own parsers for each individual project even though they are often writing the same inefficient, rigid, and unnecessarily complex algorithms.
+
+-   Current CLI parsers either do far too little, such as GetOpt, or far too much, such as CLI11. Programs should do one thing and do it well. This library takes the data in the command line and puts it into your variables.
+
+-   I wanted to contribute to the open source community and familiarize myself with GitHub.
+
+-   After actually using some of the other competitors ([CLI11](https://github.com/CLIUtils/CLI11) has a good list) to test how my library stacks up to theirs, I'm starting to remember more why I made this library.
+
+    -   For starters, I don't include half the STL to parse the command line, which keeps executables much smaller than other CLI libraries.
+
+    -   This library is also way more flexible than most other libraries. It understands that its only job is to organize data on the command line so that it becomes much easier for you to read (and also document itself through the automatic help generation).
+
+## Getting Started
+As it currently stands, the entire product is valid c++11 except for the makefiles for compiling the projects.
+
+### Prerequisites
+The library requires nothing but c++11. The test program already has symlinks to the required library and header file.
+
+### Install
+No installation required. Just download the current release and include "cpp_cli.h" in your cpp source code wherever you want to parse the command line.
 
 ## Parsing Rules
 [This answer](https://stackoverflow.com/a/14738273/6629221) on stackexchange does a good job of summarizing the standard for command line argument syntax, and the library follows these rules, which are copied below for convenience.
@@ -136,18 +144,6 @@ If a `nullptr` is provided for the first argument of a Var or Value, the parser 
 > -   The special option -- means "do not treat anything after this point on the command line as an option, even if it looks like one." This is so, for instance, you can remove a file named '-f' by typing rm -- -f.
 >
 > -   The special option - means "read standard input".
->
-> -   There are a number of short option letters reserved by convention: the most important are
->
->     -   \-v = be verbose
->
->     -   \-q = be quiet
->
->     -   \-h = print some help text
->
->     -   \-o file = output to file
->
->     -   \-f = force (don't prompt for confirmation of dangerous actions, just do them)
 
 Note that this library does not force you to use any of the commonly reserved short options at the bottom of the list, nor does it treat them any differently than any other options, nor does it reserve them. It is up to the user to maintain this standard. Furthermore, the special option "-" is treated just like any other option, so it is not reserved for standard input either. Finally, the special argument "--" will turn any arguments that come after it into non-options.
 
