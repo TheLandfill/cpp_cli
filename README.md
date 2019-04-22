@@ -2,7 +2,7 @@
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/7f047f6cbe31451f87096d6a64e277fa)](https://www.codacy.com/app/TheLandfill/cpp_cli?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=TheLandfill/cpp_cli&amp;utm_campaign=Badge_Grade)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-cpp_cli is a library designed to make parsing command line arguments for c++ easy and efficient.
+cpp_cli is a library designed to make parsing command line arguments for c++ easy, needing only one line per variable you want to set and one line to parse, and efficient, running in linear time with respect to the number of arguments passed to the command line.
 
 Currently, this library has a stable release with all the functionality you could want from a CLI library, including subcommand handling and automatic help generation.
 
