@@ -141,14 +141,20 @@ inline void Parser::generate_help(const char * subcommand_name) {
 		print_within_length("The help file path has not been set. "
 		"Use the command 'Parser::set_help_file_path(const char * hfn)' to set a valid file path before calling generate_help. "
 		"The file path should be an absolute path if you want the program to run anywhere. "
-		"Only use a relative path if your executable can only be executed from one spot.", buffer, 2048);
+		"Only use a relative path if your executable can only be executed from one spot.", buffer, sizeof(buffer));
 		throw std::runtime_error(buffer);
 	}
-	buffer_index += sprintf(buffer_index, "%s.", help_file_path);
+	int buffer_size = sizeof(buffer);
+	int num_char_written = 0;
+	num_char_written = snprintf(buffer_index, buffer_size, "%s.", help_file_path);
+	buffer_size -= num_char_written;
+	buffer_index += num_char_written;
 	for (size_t i = 0; i < current_command_list.size(); i++) {
-		buffer_index += sprintf(buffer_index, "%s_", current_command_list[i]);
+		num_char_written = snprintf(buffer_index, buffer_size, "%s_", current_command_list[i]);
+		buffer_size -= num_char_written;
+		buffer_index += num_char_written;
 	}
-	sprintf(buffer_index, "help_file");
+	snprintf(buffer_index, buffer_size, "help_file");
 	set_help_file_name(buffer);
 
 	FILE * file_exists = fopen(help_file_name, "r");
@@ -160,19 +166,24 @@ inline void Parser::generate_help(const char * subcommand_name) {
 	FILE * file_writer = fopen(help_file_name, "w");
 	if (file_writer == nullptr) {
 		char error_message_buffer[1024];
-		sprintf(error_message_buffer, "%s must exist and be accessable by the current user.", help_file_path);
+		snprintf(error_message_buffer, sizeof(error_message_buffer), "%s must exist and be accessable by the current user.", help_file_path);
 		throw std::runtime_error(error_message_buffer);
 	}
 
-	char usage_buffer[2048];
-	char * usage_buffer_index = usage_buffer;
-	usage_buffer_index += sprintf(usage_buffer_index, "%s", "usage:");
-	for (size_t i = 0; i < current_command_list.size(); i++) {
-		usage_buffer_index += sprintf(usage_buffer_index, " %s", current_command_list[i]);
-	}
-	sprintf(usage_buffer_index, " %s", usage);
+	buffer_index = buffer;
+	buffer_size = sizeof(buffer);
+	num_char_written = snprintf(buffer_index, buffer_size, "%s", "usage:");
+	buffer_size -= num_char_written;
+	buffer_index += num_char_written;
 
-	print_within_length(usage_buffer, 0, file_writer);
+	for (size_t i = 0; i < current_command_list.size(); i++) {
+		num_char_written = snprintf(buffer_index, buffer_size, " %s", current_command_list[i]);
+		buffer_size -= num_char_written;
+		buffer_index += num_char_written;
+	}
+	snprintf(buffer_index, buffer_size, " %s", usage);
+
+	print_within_length(buffer, 0, file_writer);
 	print_within_length(header, 0, file_writer);
 
 	bool any_descriptions = false;
@@ -194,7 +205,6 @@ inline void Parser::generate_help(const char * subcommand_name) {
 
 
 	fprintf(file_writer, "OPTIONS:\n");
-	char help_buffer[2048];
 	for (size_t i = 0; i < list_of_cmd_var.size(); i++) {
 		CLI_Interface * clv = list_of_cmd_var[i];
 		const std::vector<const char *>& a = clv->get_aliases();
@@ -202,12 +212,11 @@ inline void Parser::generate_help(const char * subcommand_name) {
 			int len_str = 0;
 			const char * n_dash = "--";
 			for (size_t j = 0; j < a.size(); j++) {
-				int added = sprintf(help_buffer + len_str, "%s%s, ", n_dash + (a[j][1] == '\0') * (1 + (a[j][0] == '-')), a[j]);
-				len_str += added;
+				len_str += snprintf(buffer + len_str, sizeof(buffer) - len_str, "%s%s, ", n_dash + (a[j][1] == '\0') * (1 + (a[j][0] == '-')), a[j]);
 			}
-			help_buffer[len_str - 2] = '\0';
+			buffer[len_str - 2] = '\0';
 
-			fprintf(file_writer, "%s\n", help_buffer);
+			fprintf(file_writer, "%s\n", buffer);
 			print_within_length(clv->get_help_message(), 8, file_writer);
 		}
 	}	
@@ -220,7 +229,7 @@ inline void Parser::print_help() {
 	FILE * file_reader = fopen(help_file_name, "r");
 	if (file_reader == nullptr) {
 		char error_message[1024];
-		sprintf(error_message, "%s has not been generated. "
+		snprintf(error_message, sizeof(error_message), "%s has not been generated. "
 		"Please put Parser::generate_help() right before calling Parser::parse in the subcommand: ", help_file_name);
 		int i = 1;
 		int offset = strlen(error_message);
@@ -231,7 +240,7 @@ inline void Parser::print_help() {
 		}
 		error_message[i - 1 + offset] = '\0';
 		char error_buffer[2048];
-		print_within_length(error_message, error_buffer, 2048);
+		print_within_length(error_message, error_buffer, sizeof(error_buffer));
 		throw std::runtime_error(error_buffer);
 	}
 	char buffer[2048];
@@ -367,7 +376,7 @@ inline int Parser::find_and_mark_split_location(char * flag) {
 inline void Parser::check_if_option_exists(const char * error_message, const char * potential_option, const bool exists, const bool should_exist) {
 	char error_message_buffer[1024];
 	if (exists != should_exist) {
-		sprintf(error_message_buffer, "%s%s", error_message, potential_option);
+		snprintf(error_message_buffer, sizeof(error_message_buffer), "%s%s", error_message, potential_option);
 		throw std::invalid_argument(error_message_buffer);
 	}
 }
@@ -393,13 +402,13 @@ inline void Parser::long_option_handling(char ** argv, int& i) {
 			temp_alias[split_location - 1] = '=';
 		} else {
 			char error_message_buffer[1024];
-			sprintf(error_message_buffer, "%s%s", "Option does not take arguments: --", temp_alias);
+			snprintf(error_message_buffer, sizeof(error_message_buffer), "%s%s", "Option does not take arguments: --", temp_alias);
 			throw std::invalid_argument(error_message_buffer);
 		}
 	// case: --long-option
 	} else if (command_line_settings_map[temp_alias]->takes_args()) {
 		char error_message_buffer[1024];
-		sprintf(error_message_buffer, "%s%s", "Option requires arguments: --", temp_alias);
+		snprintf(error_message_buffer, sizeof(error_message_buffer), "%s%s", "Option requires arguments: --", temp_alias);
 		throw std::invalid_argument(error_message_buffer);
 	} else {
 		command_line_settings_map[temp_alias]->set_base_variable(temp_alias);
