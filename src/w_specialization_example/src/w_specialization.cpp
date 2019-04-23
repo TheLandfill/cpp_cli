@@ -6,6 +6,7 @@
 
 int main(int argc, char ** argv) {
 	using namespace cpp_cli;
+	Parser p;
 	std::string filename = "a.out";
 	int recursion_level = -1;
 	std::string flag = "false";
@@ -78,19 +79,19 @@ int main(int argc, char ** argv) {
 		const char * footer = "For more information, contact me at the.landfill.coding@gmail.com or on the github page. You could also put your version information"
 		" stuff here, which would be cool.";
 		
-		Parser::set_header(header);
-		Parser::set_usage(usage);
-		Parser::set_footer(footer);
-		Parser::set_help_width(90);
-		Parser::set_help_file_path("");
+		p.set_header(header);
+		p.set_usage(usage);
+		p.set_footer(footer);
+		p.set_help_width(90);
+		p.set_help_file_path("");
 
-		Parser::generate_help(argv[0]);
+		p.generate_help(argv[0]);
 
-		non_options = Parser::parse(argc, argv);
+		non_options = p.parse(argc, argv);
 	}
 
 	if (help) {
-		Parser::print_help();
+		p.print_help();
 		return 0;
 	}
 

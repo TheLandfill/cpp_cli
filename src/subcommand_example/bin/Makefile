@@ -53,10 +53,10 @@ $(OBJDIR):
 
 .PHONY: clean
 
-clean:
-	rm -f $(OBJDIR)/* $(PRODUCT) $(BINDIR)/*_help_file
+clean: remove_help
+	rm -f $(OBJDIR)/* $(PRODUCT)
 
 .PHONY: remove_help
 
 remove_help:
-	rm -f $(BINDIR)/*_help_file
+	rm -f $(BINDIR)/.*_help_file
