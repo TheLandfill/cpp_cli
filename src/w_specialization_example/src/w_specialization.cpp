@@ -5,7 +5,7 @@
 #include <string>
 
 int main(int argc, char ** argv) {
-	using namespace cpp_cli;
+	using namespace cli;
 	Parser p;
 	std::string filename = "a.out";
 	int recursion_level = -1;

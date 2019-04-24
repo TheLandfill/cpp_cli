@@ -2,7 +2,7 @@
 #define CPP_CMD_LINE_PARSER_TEMPLATES_H
 #include <vector>
 
-namespace cpp_cli{
+namespace cli{
 	
 class CLI_Interface {
 protected:

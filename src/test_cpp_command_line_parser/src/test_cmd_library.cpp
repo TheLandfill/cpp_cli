@@ -4,7 +4,7 @@
 #include <string>
 
 int main(int argc, char ** argv) {
-	using namespace cpp_cli;
+	using namespace cli;
 	std::string filename = "a.out";
 	int recursion_level = -1;
 	char flag = '\0';
@@ -30,7 +30,7 @@ int main(int argc, char ** argv) {
 		Parser p;
 		char header[] = "This test program will demonstrate the basic functionality of this library. Other test programs will demonstrate more advances functionality. This is just going to be a really long test header to demonstrate that the function that will break this into lines will work, so I have to add a bunch of unecessary information after the first few sentences so I can make sure that the formatter works.";
 
-		char usage[] = "[options/non-options]\nIt doesn't really matter what you put here since none of the positions matter.";
+		char usage[] = "[options/non-options]\n\nIt doesn't really matter what you put here since none of the positions matter.";
 
 		char footer[] = "For more information, contact me at the.landfill.coding@gmail.com or on the github page. You could also put your version information stuff here, which would be cool.";
 		

@@ -1,36 +1,39 @@
 #ifndef CPP_CMD_LINE_PARSER_H
 #define CPP_CMD_LINE_PARSER_H
 #include "args_parser_templates.h"
-#include "hash_table.h"
+#include <unordered_map>
+#include <fstream>
+#include <iostream>
+#include <string>
 #include <cstdlib>
 #include <stdexcept>
 #include <vector>
 #include <cstdio>
 
-namespace cpp_cli{
+namespace cli{
 	
 class Parser {
 friend class CLI_Interface;
 public:
 	typedef void (*subcommand_func)(int, char **, void *);
 private:
-	static Hash_Table<CLI_Interface> command_line_settings_map;
+	static std::unordered_map<std::string, CLI_Interface *> command_line_settings_map;
 	static std::vector<CLI_Interface *> list_of_cmd_var;
 	static std::vector<const char *> non_options;
 
-	static Hash_Table<subcommand_func> subcommand_map;
+	static std::unordered_map<std::string, subcommand_func> subcommand_map;
 	static std::vector<subcommand_func> subcommand_list;
 	static std::vector<const char *> subcommand_aliases;
 	static std::vector<const char *> subcommand_descriptions;
 
 	static size_t num_unique_flags;
 
-	static const char * header;
-	static const char * usage;
-	static const char * footer;
-	static const char * help_file_name;
-	static const char * help_file_path;
-	static int help_width;
+	static std::string header;
+	static std::string usage;
+	static std::string footer;
+	static std::string help_file_name;
+	static std::string help_file_path;
+	static size_t help_width;
 	static std::vector<const char *> current_command_list;
 private:
 	static void fill_hash_table();
@@ -48,19 +51,23 @@ private:
 	static void clear_everything();
 	static void clear_memory();
 
-	static void print_within_length(const char * str, int indent = 0, FILE * file_writer = stdout);
-	static int print_within_length(const char * str, char * buffer, int bf_size, int indent = 0);
 	static void print_flags();
 public:
+	static void print_within_length_c_file(const char * str, size_t indent = 0, FILE * file_writer = stdout);
+	static int print_within_length_c_str(const char * str, char * buffer, int bf_size, size_t indent = 0);
+
+	static void print_within_length_stream(const std::string& str, size_t indent = 0, std::ostream& file_writer = std::cout);
+	static std::string print_within_length_str(const std::string& str, size_t indent = 0);
+	
 	static void add_subcommand(const char * subcommand, subcommand_func sub_func, const char * description = "");
 	static void reserve_space_for_subcommand(size_t number_of_subcommand);
 
-	static void set_usage(const char * u);
-	static void set_header(const char * h);
-	static void set_footer(const char * f);
-	static void set_help_width(int hw);
-	static void set_help_file_name(const char * hfn);
-	static void set_help_file_path(const char * hfp);
+	static void set_usage(std::string u);
+	static void set_header(std::string h);
+	static void set_footer(std::string f);
+	static void set_help_width(size_t hw);
+	static void set_help_file_name(std::string hfn);
+	static void set_help_file_path(std::string hfp);
 
 	static void generate_help(const char * command_name);
 	static void print_help();
@@ -106,27 +113,27 @@ inline std::vector<const char *> Parser::parse(int argc, char ** argv, void * da
 	return non_options;
 }
 
-inline void Parser::set_header(const char * h) {
+inline void Parser::set_header(std::string h) {
 	header = h;
 }
 
-inline void Parser::set_usage(const char * u) {
+inline void Parser::set_usage(std::string u) {
 	usage = u;
 }
 
-inline void Parser::set_footer(const char * f) {
+inline void Parser::set_footer(std::string f) {
 	footer = f;
 }
 
-inline void Parser::set_help_width(int hw) {
+inline void Parser::set_help_width(size_t hw) {
 	help_width = hw;
 }
 
-inline void Parser::set_help_file_name(const char * hfn) {
+inline void Parser::set_help_file_name(std::string hfn) {
 	help_file_name = hfn;
 }
 
-inline void Parser::set_help_file_path(const char * hfp) {
+inline void Parser::set_help_file_path(std::string hfp) {
 	help_file_path = hfp;
 }
 
@@ -135,56 +142,47 @@ inline void Parser::generate_help(const char * subcommand_name) {
 		subcommand_name += 2;
 	}
 	current_command_list.push_back(subcommand_name);
-	char buffer[2048];
-	char * buffer_index = buffer;
-	if (help_file_path == nullptr) {
-		print_within_length("The help file path has not been set. "
-		"Use the command 'Parser::set_help_file_path(const char * hfn)' to set a valid file path before calling generate_help. "
+	std::string buffer;
+	buffer.reserve(2048);
+	if (help_file_path == "`") {
+		std::string error_message = print_within_length_str(std::string("The help file path has not been set. "
+		"Use the command 'Parser::set_help_file_path(std::string hfn)' to set a valid file path before calling generate_help. "
 		"The file path should be an absolute path if you want the program to run anywhere. "
-		"Only use a relative path if your executable can only be executed from one spot.", buffer, sizeof(buffer));
+		"Only use a relative path if your executable can only be executed from one spot."));
 		throw std::runtime_error(buffer);
 	}
-	int buffer_size = sizeof(buffer);
-	int num_char_written = 0;
-	num_char_written = snprintf(buffer_index, buffer_size, "%s.", help_file_path);
-	buffer_size -= num_char_written;
-	buffer_index += num_char_written;
+	buffer = help_file_path;
+	buffer += ".";
 	for (size_t i = 0; i < current_command_list.size(); i++) {
-		num_char_written = snprintf(buffer_index, buffer_size, "%s_", current_command_list[i]);
-		buffer_size -= num_char_written;
-		buffer_index += num_char_written;
+		buffer += current_command_list[i];
+		buffer += "_";
 	}
-	snprintf(buffer_index, buffer_size, "help_file");
+	buffer += "help_file";
 	set_help_file_name(buffer);
 
-	FILE * file_exists = fopen(help_file_name, "r");
-	if (file_exists != nullptr) {
-		fclose(file_exists);
-		return;
+	std::ofstream file_writer;
+	file_writer.open(help_file_name);
+
+	if (!file_writer.is_open()) {
+		std::string error_message;
+		error_message.reserve(1024);
+		error_message += help_file_name;
+		error_message += " must be accessable by the current user.";
+		throw std::runtime_error(error_message);
 	}
 
-	FILE * file_writer = fopen(help_file_name, "w");
-	if (file_writer == nullptr) {
-		char error_message_buffer[1024];
-		snprintf(error_message_buffer, sizeof(error_message_buffer), "%s must exist and be accessable by the current user.", help_file_path);
-		throw std::runtime_error(error_message_buffer);
-	}
-
-	buffer_index = buffer;
-	buffer_size = sizeof(buffer);
-	num_char_written = snprintf(buffer_index, buffer_size, "%s", "usage:");
-	buffer_size -= num_char_written;
-	buffer_index += num_char_written;
-
+	buffer = "usage:";
 	for (size_t i = 0; i < current_command_list.size(); i++) {
-		num_char_written = snprintf(buffer_index, buffer_size, " %s", current_command_list[i]);
-		buffer_size -= num_char_written;
-		buffer_index += num_char_written;
+		buffer += " ";
+		buffer += current_command_list[i];
 	}
-	snprintf(buffer_index, buffer_size, " %s", usage);
 
-	print_within_length(buffer, 0, file_writer);
-	print_within_length(header, 0, file_writer);
+	buffer += usage;
+
+	print_within_length_stream(buffer, 0, file_writer);
+	file_writer << "\n";
+	print_within_length_stream(header, 0, file_writer);
+	file_writer << "\n";
 
 	bool any_descriptions = false;
 
@@ -193,71 +191,77 @@ inline void Parser::generate_help(const char * subcommand_name) {
 	}
 
 	if (any_descriptions) {
-		fprintf(file_writer, "SUBCOMMANDS:\n");
+		file_writer << "SUBCOMMANDS:\n";
 		for (size_t i = 0; i < subcommand_descriptions.size(); i++) {
 			if (subcommand_descriptions[i][0] != '`') {
-				fprintf(file_writer, "%s\n", subcommand_aliases[i]);
-				print_within_length(subcommand_descriptions[i], 8, file_writer);
+				file_writer << subcommand_aliases[i] << "\n";
+				print_within_length_stream(subcommand_descriptions[i], 8, file_writer);
 			}
 		}
-		fprintf(file_writer, "\n");
+		file_writer << "\n";
 	}
 
-
-	fprintf(file_writer, "OPTIONS:\n");
+	file_writer << "OPTIONS:\n";
 	for (size_t i = 0; i < list_of_cmd_var.size(); i++) {
 		CLI_Interface * clv = list_of_cmd_var[i];
 		const std::vector<const char *>& a = clv->get_aliases();
+		buffer = "";
 		if (clv->get_help_message()[0] != '`') {
-			int len_str = 0;
 			const char * n_dash = "--";
+			
 			for (size_t j = 0; j < a.size(); j++) {
-				len_str += snprintf(buffer + len_str, sizeof(buffer) - len_str, "%s%s, ", n_dash + (a[j][1] == '\0') * (1 + (a[j][0] == '-')), a[j]);
+				buffer += n_dash + (a[j][1] == '\0') * (1 + (a[j][0] == '-'));
+				buffer += a[j];
+				buffer += ", ";
 			}
-			buffer[len_str - 2] = '\0';
+			buffer.pop_back();
+			buffer.pop_back();
 
-			fprintf(file_writer, "%s\n", buffer);
-			print_within_length(clv->get_help_message(), 8, file_writer);
+			file_writer << buffer << "\n";
+			print_within_length_stream(std::string(clv->get_help_message()), 8, file_writer);
 		}
 	}	
-	fprintf(file_writer, "\n");
-	print_within_length(footer, 0, file_writer);
-	fclose(file_writer);
+	file_writer << "\n";
+	print_within_length_stream(footer, 0, file_writer);
+	file_writer.close();
 }
 
 inline void Parser::print_help() {
-	FILE * file_reader = fopen(help_file_name, "r");
-	if (file_reader == nullptr) {
-		char error_message[1024];
-		snprintf(error_message, sizeof(error_message), "%s has not been generated. "
-		"Please put Parser::generate_help() right before calling Parser::parse in the subcommand: ", help_file_name);
-		int i = 1;
-		int offset = strlen(error_message);
-		int max_length_of_name = strlen(help_file_name) - strlen("_help_file");
-		while (i < max_length_of_name && help_file_name[i] != '\0') {
-			error_message[i - 1 + offset] = help_file_name[i];
-			i++;
+	std::ifstream file_reader;
+	file_reader.open(help_file_name);
+	if (!file_reader.is_open()) {
+		std::string error_message;
+		error_message.reserve(1024);
+		error_message += "\"";
+		error_message += help_file_name;
+		error_message += "\" in \"";
+		error_message += help_file_path;
+		error_message += "\"";
+		if (help_file_path == "") {
+			error_message += " (current running directory)";
 		}
-		error_message[i - 1 + offset] = '\0';
-		char error_buffer[2048];
-		print_within_length(error_message, error_buffer, sizeof(error_buffer));
-		throw std::runtime_error(error_buffer);
-	}
-	char buffer[2048];
-	size_t nread;
-	if (file_reader) {
-		while ((nread = fread(buffer, 1, sizeof buffer, file_reader)) > 0) {
-			fwrite(buffer, 1, nread, stdout);
+		error_message += " has not been generated. Please put Parser::generate_help(argv[0]) right before calling parse in the subcommand: ";
+		for (size_t i = 0; i < error_message.size(); i++) {
+			error_message += current_command_list[i];
+			error_message += "->";
+		}
+		error_message.pop_back();
+		error_message.pop_back();
+		throw std::runtime_error(error_message);
+	} else {
+		std::string line;
+		while (std::getline(file_reader, line)) {
+			std::cout << line << "\n";
 		}
 	}
-	fclose(file_reader);
+	file_reader.close();
 }
 
-inline int Parser::print_within_length(const char * str, char * buffer, int bf_size, int indent) {
-	int i = 0;
+inline int Parser::print_within_length_c_str(const char * str, char * buffer, int bf_size, size_t indent) {
+	size_t i = 0;
 	int last_position = -1;
 	const char * initial_str = str;
-	while (str[i] != '\0' && str - initial_str < bf_size - help_width - 1) {
+	while (str[i] != '\0' && (size_t)(str - initial_str) < bf_size - help_width - 1) {
 		while (str[i] != '\0' && str[i] != ' ' && str[i] != '\n' && str[i] != '\t') {
 			i++;
 		}
@@ -271,10 +275,10 @@ inline int Parser::print_within_length(const char * str, char * buffer, int bf_s
 		}
 
 		if (str[i] == '\0') {
-			buffer += sprintf(buffer, "%*s\n", indent + i, str);
+			buffer += sprintf(buffer, "%*s\n", (int)(indent + i), str);
 			str += i;
 		} else {
-			buffer += sprintf(buffer, "%*.*s\n", last_position + indent, last_position, str);
+			buffer += sprintf(buffer, "%*.*s\n", last_position + (int)indent, last_position, str);
 			str += last_position + 1;
 		}
 		i = 0;
@@ -282,12 +286,12 @@ inline int Parser::print_within_length(const char * str, char * buffer, int bf_s
 	return str - initial_str;
 }
 
-inline void Parser::print_within_length(const char * str, int indent, FILE * file_writer) {
+inline void Parser::print_within_length_c_file(const char * str, size_t indent, FILE * file_writer) {
 	const int bf_size = 2048;
 	char buffer[bf_size];
 	const char * i_str = str;
 	while (str[0] != '\0') {
-		str += print_within_length(str, buffer, bf_size, indent);
+		str += print_within_length_c_str(str, buffer, bf_size, indent);
 		fprintf(file_writer, "%s", buffer);
 	}
 	if (i_str[0] != '\0') {
@@ -295,16 +299,45 @@ inline void Parser::print_within_length(const char * str, int indent, FILE * fil
 	}
 }
 
+void Parser::print_within_length_stream(const std::string& str, size_t indent, std::ostream& stream) {
+	size_t cur_index = 0;
+	std::string indent_str(indent, ' ');
+	while (cur_index + help_width < str.length()) {
+		size_t line_length = str.find_last_of(" \t", cur_index + help_width - indent);
+		size_t next_newline = str.find("\n", cur_index);
+		if (next_newline < line_length) {
+			line_length = next_newline;
+		}
+		stream << indent_str << str.substr(cur_index, line_length - cur_index) << "\n";
+		cur_index = line_length + 1;
+	}
+	stream << std::string(indent, ' ') << str.substr(cur_index) << "\n";
+}
+
+std::string Parser::print_within_length_str(const std::string& str, size_t indent) {
+	size_t cur_index = 0;
+	std::string next_str;
+	next_str.reserve(str.length());
+	while (cur_index < str.length()) {
+		size_t line_length = str.rfind(" ", cur_index + help_width - indent);
+		next_str += std::string(indent, ' ');
+		next_str += str.substr(cur_index, line_length - cur_index);
+		next_str += "\n";
+		cur_index += line_length + 1;
+	}
+	return next_str;
+}
+
 inline void Parser::fill_hash_table() {
-	command_line_settings_map = Hash_Table<CLI_Interface>(num_unique_flags);
-	Hash_Table<int> flag_already_used(num_unique_flags);
+	command_line_settings_map = std::unordered_map<std::string, CLI_Interface *>(num_unique_flags);
+	std::unordered_map<std::string, int *> flag_already_used(num_unique_flags);
 	for (size_t i = 0; i < Parser::list_of_cmd_var.size(); i++) {
 		CLI_Interface * cur_com_var = list_of_cmd_var[i];
 		const std::vector<const char *> & cur_aliases = cur_com_var->get_aliases();
 		for (size_t j = 0; j < cur_aliases.size(); j++) {
 			check_if_option_exists("Flag already used: ", cur_aliases[j], flag_already_used.count(cur_aliases[j]), false);
-			flag_already_used.insert(cur_aliases[j], nullptr);
-			command_line_settings_map.insert(cur_aliases[j], cur_com_var);
+			flag_already_used.insert({cur_aliases[j], nullptr});
+			command_line_settings_map.insert({cur_aliases[j], cur_com_var});
 		}
 	}
 }
@@ -331,11 +364,11 @@ inline void Parser::add_subcommand(const char * subcommand, Parser::subcommand_f
 inline void Parser::fill_subcommand_hash_table() {
 	size_t n_sub = subcommand_aliases.size();
 	subcommand_map.reserve(2 * n_sub);
-	Hash_Table<int> flag_already_used(2 * n_sub);
+	std::unordered_map<std::string, int *> flag_already_used(2 * n_sub);
 	for (size_t i = 0; i < n_sub; i++) {
 		check_if_option_exists("Subcommand already used: ", subcommand_aliases[i], flag_already_used.count(subcommand_aliases[i]), false);
-		flag_already_used.insert(subcommand_aliases[i], nullptr);
-		subcommand_map.insert(subcommand_aliases[i], &(subcommand_list[i]));
+		flag_already_used.insert({subcommand_aliases[i], nullptr});
+		subcommand_map.insert({subcommand_aliases[i], subcommand_list[i]});
 	}
 }
 
@@ -351,8 +384,8 @@ inline void Parser::clear_everything() {
 }
 
 inline void Parser::clear_memory() {
-	subcommand_map.clear_memory();
-	command_line_settings_map.clear_memory();
+	subcommand_map.clear();
+	command_line_settings_map.clear();
 
 	std::vector<subcommand_func>().swap(subcommand_list);
 	std::vector<const char *>().swap(subcommand_aliases);
@@ -374,9 +407,11 @@ inline int Parser::find_and_mark_split_location(char * flag) {
 }
 
 inline void Parser::check_if_option_exists(const char * error_message, const char * potential_option, const bool exists, const bool should_exist) {
-	char error_message_buffer[1024];
 	if (exists != should_exist) {
-		snprintf(error_message_buffer, sizeof(error_message_buffer), "%s%s", error_message, potential_option);
+		std::string error_message_buffer;
+		error_message_buffer.reserve(1024);
+		error_message_buffer += error_message;
+		error_message_buffer += potential_option;
 		throw std::invalid_argument(error_message_buffer);
 	}
 }
@@ -401,15 +436,19 @@ inline void Parser::long_option_handling(char ** argv, int& i) {
 			command_line_settings_map[temp_alias]->set_base_variable(temp_alias + split_location);
 			temp_alias[split_location - 1] = '=';
 		} else {
-			char error_message_buffer[1024];
-			snprintf(error_message_buffer, sizeof(error_message_buffer), "%s%s", "Option does not take arguments: --", temp_alias);
-			throw std::invalid_argument(error_message_buffer);
+			std::string error_message;
+			error_message.reserve(1024);
+			error_message += "Option does not take arguments: --";
+			error_message += temp_alias;
+			throw std::invalid_argument(error_message);
 		}
 	// case: --long-option
 	} else if (command_line_settings_map[temp_alias]->takes_args()) {
-		char error_message_buffer[1024];
-		snprintf(error_message_buffer, sizeof(error_message_buffer), "%s%s", "Option requires arguments: --", temp_alias);
-		throw std::invalid_argument(error_message_buffer);
+		std::string error_message;
+		error_message.reserve(1024);
+		error_message += "Option requires arguments: --";
+		error_message += temp_alias;
+		throw std::invalid_argument(error_message);
 	} else {
 		command_line_settings_map[temp_alias]->set_base_variable(temp_alias);
 	}
@@ -449,12 +488,12 @@ inline void Parser::multiple_short_options_handling(int argc, char ** argv, int&
 	char temp_alias[2] = "\0";
 
 	// case -vvv
-	const int repetition_buffer_size = 32;
-	char temp_repetition[repetition_buffer_size] = "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
+	std::string temp_repetition;
+	temp_repetition.reserve(32);
 	bool repeated_short_arguments = false;
-	while (flag[i] != '\0' && flag[i] == flag[0] && i < repetition_buffer_size - 1) {
+	while (flag[i] != '\0' && flag[i] == flag[0]) {
 		repeated_short_arguments = true;
-		temp_repetition[i] = flag[i];
+		temp_repetition.push_back(flag[i]);
 		i++;
 	}
 
@@ -464,7 +503,7 @@ inline void Parser::multiple_short_options_handling(int argc, char ** argv, int&
 
 	if (repeated_short_arguments) {
 		temp_alias[0] = temp_repetition[0];
-		command_line_settings_map[temp_alias]->set_base_variable(temp_repetition);
+		command_line_settings_map[temp_alias]->set_base_variable(temp_repetition.c_str());
 	}
 		
 	// case -abc
@@ -474,14 +513,19 @@ inline void Parser::multiple_short_options_handling(int argc, char ** argv, int&
 		check_if_option_exists("Unrecognized Option: -", temp_alias, command_line_settings_map.count(temp_alias), true);
 
 		if (command_line_settings_map[temp_alias]->ignored()) {
-			char error_message[] = "Order of \"-\0\" matters, so it cannot be part of multiple short arguments.";
-			error_message[11] = flag[i];
+			std::string error_message;
+			error_message.reserve(128);
+			error_message += "Order of -";
+			error_message += flag[i];
+			error_message += " matters, so it cannoth be part of multiple short arguments.";
 			throw std::invalid_argument(error_message);
 		}
 		if (command_line_settings_map[temp_alias]->takes_args()) {
 			if (flag[i + 1] != '\0' || cur_argument + 1 >= argc) {
-				char error_message[] = "Option requires arguments: \0";
-				error_message[27] = flag[i];
+				std::string error_message;
+				error_message.reserve(64);
+				error_message += "Option requires arguments: ";
+				error_message += flag[i];
 				throw std::invalid_argument(error_message);
 			} else {
 				cur_argument++;
@@ -640,11 +684,11 @@ inline void Vector<const char *>::set_base_variable(const char * b_v) {
 template<>
 inline void Vector<char *>::set_base_variable(const char * b_v) {
 	(void)b_v;
-	char error_message[] = "Because the length of the char buffers in the vector cannot\n"
-	"be specified and you cannot set a char * to a const char *, you cannot use char\n"
-	"as an acceptable type for a Vector. Use const char *, std::string, or\n"
+	std::string error_message = "Because the length of the char buffers in the vector cannot"
+	"be specified and you cannot set a char * to a const char *, you cannot use char"
+	"as an acceptable type for a Vector. Use const char *, std::string, or"
 	"another template overload.";
-	throw std::invalid_argument(error_message);
+	throw std::invalid_argument(Parser::print_within_length_str(error_message));
 }
 
 template<>
@@ -659,22 +703,22 @@ inline void Vector<char>::set_base_variable(const char * b_v) {
 // Static Declarations
 
 std::vector<CLI_Interface *> Parser::list_of_cmd_var = std::vector<CLI_Interface *>();
-Hash_Table<CLI_Interface> Parser::command_line_settings_map = Hash_Table<CLI_Interface>(100);
+std::unordered_map<std::string, CLI_Interface *> Parser::command_line_settings_map = std::unordered_map<std::string, CLI_Interface *>(100);
 std::vector<const char *> Parser::non_options = std::vector<const char *>();
 
-Hash_Table<Parser::subcommand_func> Parser::subcommand_map = Hash_Table<subcommand_func>(10);
+std::unordered_map<std::string, Parser::subcommand_func> Parser::subcommand_map = std::unordered_map<std::string, subcommand_func>(10);
 std::vector<Parser::subcommand_func> Parser::subcommand_list = std::vector<subcommand_func>();
 std::vector<const char *> Parser::subcommand_aliases = std::vector<const char *>();
 std::vector<const char *> Parser::subcommand_descriptions = std::vector<const char *>();
 
 size_t Parser::num_unique_flags = 0;
 
-const char * Parser::header = "";
-const char * Parser::usage = "";
-const char * Parser::footer = "";
-const char * Parser::help_file_name = ".main_help_file";
-const char * Parser::help_file_path = nullptr;
-int Parser::help_width = 80;
+std::string Parser::header = "";
+std::string Parser::usage = "";
+std::string Parser::footer = "";
+std::string Parser::help_file_name = ".main_help_file";
+std::string Parser::help_file_path = "`";
+size_t Parser::help_width = 80;
 std::vector<const char *> Parser::current_command_list = std::vector<const char *>();
 
 }

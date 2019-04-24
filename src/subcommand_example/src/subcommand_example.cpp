@@ -16,7 +16,7 @@ struct Main_Subcommand_Variables {
 };
 
 int main(int argc, char ** argv) {
-	using namespace cpp_cli;
+	using namespace cli;
 	Parser p;
 	Main_Subcommand_Variables msv;
 	Var<std::string> file_path_var(msv.file_path, { "path", "p" }, true, "Dummy variable.");
@@ -65,7 +65,7 @@ int main(int argc, char ** argv) {
 }
 
 void push_prog(int argc, char ** argv, void * data) {
-	using namespace cpp_cli;
+	using namespace cli;
 	Parser p;
 	Main_Subcommand_Variables * fixed_data = static_cast<Main_Subcommand_Variables*>(data);
 	std::string URL = "";
@@ -96,7 +96,7 @@ void push_prog(int argc, char ** argv, void * data) {
 }
 
 void pull_prog(int argc, char ** argv, void * data) {
-	using namespace cpp_cli;
+	using namespace cli;
 	Parser p;
 	(void)data;
 	std::string URL = "";
@@ -126,7 +126,7 @@ void pull_prog(int argc, char ** argv, void * data) {
 }
 
 void test_prog(int argc, char ** argv, void * data) {
-	using namespace cpp_cli;
+	using namespace cli;
 	Parser p;
 	int underwear_count = 0;
 	double EURL = -1;

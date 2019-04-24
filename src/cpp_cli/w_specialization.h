@@ -1,10 +1,11 @@
 #ifndef WSpecialization_H
 #define WSpecialization_H
 #include "args_parser_templates.h"
-#include "hash_table.h"
+#include <unordered_map>
+#include <string>
 #include <stdexcept>
 #include <vector>
-namespace cpp_cli{
+namespace cli {
 class WInterface;
 
 // Named after the -W flag of gcc
@@ -12,10 +13,12 @@ class WSpecialization {
 friend class WInterface;
 friend class Var<WSpecialization>;
 private:
-	Hash_Table<WInterface> setters;
+	std::unordered_map<std::string, WInterface *> setters;
 public:
-	WSpecialization(size_t initial_size) :	setters(Hash_Table<WInterface>(initial_size)) {}
-	WInterface * operator[](const char * flag) {
+	WSpecialization(size_t initial_size) {
+		setters.reserve(initial_size);
+	}
+	WInterface * operator[](const std::string& flag) {
 		return setters[flag];
 	}
 };
@@ -24,8 +27,8 @@ class WInterface {
 protected:
 	void * base_variable;
 public:
-	WInterface(void * b_v, WSpecialization & w_s, const char * alias) : base_variable(b_v) {
-		w_s.setters.insert(alias, this);
+	WInterface(void * b_v, WSpecialization & w_s, std::string alias) : base_variable(b_v) {
+		w_s.setters.insert({alias, this});
 	}
 	virtual void set_base_variable(const char * flag) = 0;
 };
@@ -38,7 +41,11 @@ public:
 	Wvalue(T & b_v, WSpecialization & w_s, const char * flag, T v) : WInterface(&b_v, w_s, flag), value(v) {}
 	virtual void set_base_variable(const char * flag) {
 		if (flag[0] != '\0') {
-			throw std::invalid_argument("Flag does not require arguments.");
+			std::string error_message;
+			error_message.reserve(64);
+			error_message += flag;
+			error_message += " does not require arguments.";
+			throw std::invalid_argument(error_message);
 		}
 		*(T *)base_variable = value;
 	}
@@ -72,24 +79,21 @@ public:
 
 template<>
 inline void Var<WSpecialization>::set_base_variable(const char * flag) {
-	int split_location = 0;
-	char temp_flag[1024];
-	for (; flag[split_location] != '\0'; split_location++) {
-		temp_flag[split_location] = flag[split_location];
-		if (flag[split_location] == '=') {
-			temp_flag[split_location] = '\0';
-			split_location++;
-			break;
-		}
-		temp_flag[split_location + 1] = '\0';
+	std::string flag_str = flag;
+	size_t split_location = flag_str.find('=');
+	std::string temp_flag = flag_str.substr(0, split_location);
+	if (split_location == std::string::npos) {
+		split_location = flag_str.length();
+	} else {
+		split_location++;
 	}
 	if (((WSpecialization *)base_variable)->setters.count(temp_flag) == 0) {
-		char error_message_buffer[] = "Option does not exist: -W\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
-		error_message_buffer[24] = aliases[0][0]; 
-		for (int i = 0; i <= 32 && temp_flag[i] != '\0'; i++) {
-			error_message_buffer[25 + i] = temp_flag[i];
-		}
-		throw std::invalid_argument(error_message_buffer);
+		std::string error_message;
+		error_message.reserve(200);
+		error_message = "Option does not exist: -";
+		error_message += aliases[0];
+		error_message += temp_flag;
+		throw std::invalid_argument(error_message);
 	}
 	((WSpecialization *)base_variable)->setters[temp_flag]->set_base_variable(flag + split_location);
 }
