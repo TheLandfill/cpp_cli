@@ -16,20 +16,66 @@ If you just want to get something up and running, read here.
 7.  All the variables will be set after hash finishes.
 8.  Any non-flagged argument or ignored argument will be returned in a vector of "non_options" in the order in which they appear in the command line.
 
-#### Syntax of Use
+### Example Usage
+```cpp
+#include "cpp_cli.h"
+
+void sample_subcommand(int argc, char ** argv, void * data);
+
+int main(int argc, char ** argv){
+  std::string filename = "";
+  int recursion_level = 0;
+  std::string show_output = "";
+  bool standard_input = false;
+  char c_version_of_string[20];
+  char file_type = '\0';
+  std::vector<int> list_of_ints;
+  std::vector<const char *> non_options;
+
+  using namespace cli;
+  
+  Parser p;
+    
+  // Set filename to the argument of "-o", "--output=", or "--out="
+  // These are variables with throwaway names.
+  Var<std::string> fv(filename, { "o", "output", "out" }, true);
+  Var<int> rlv(recursion_level, { "r", "recursion", "max_depth" }, true);
+  
+  // Set show_output to "show_output", "s", "no_out", or "half_out".
+  Var<std::string> sov(show_output, { "show_output", "s", "no_out", "half_out" }, false);
+  
+  // Used for arguments like "-vvvvv" for levels of verboseness
+  Var<char> vv(c_version_of_string, { "v" }, false, 20);
+  
+  Value<bool> siv(standard_input, { "-" }, true);
+  Value<char> ftfv(file_type, { "file", "f" }, 'f');
+  Value<char> ftdv(file_type, { "d", "dir", "directory" }, 'd');
+  Value<char> ftlv(file_type, { "l", "link" }, 'l');
+  
+  // Every instance of -L will add its argument to the vector "list_of_ints"
+  Vector<int> loiv(list_of_ints, { "list", "L" });
+    
+  p.add_subcommand(sample_subcommand, "test");
+
+  // The third argument argument isn't necessary to set in this simple example.
+  non_options = Parser::parse(argc, argv);
+  
+  // Other code. At this point, all variables are set and the "test" subcommand has been run if it was on the command line.
+}
+```
+
+If you want to provide a help message for anything, just add it to the end of the arguments to the function. The next section will display the more generic syntax.
+
+### Generic Syntax
 ```cpp
 std::vector<const char *> non_options;
 
-using namespace cpp_cli;
+using namespace cli;
 
 Parser p;
 Var<T> generic_syntax(T& variable_to_set, std::vector<const char *> flags, bool takes_args, const char * help_mess = "")
 Value<T> generic_syntax(T& variable_to_set, std::vector<const char *> flags, T value_to_set_variable, const char * help_mess = "");
 Vector<T> generic_syntax(std::vector<T>& vector_to_add_to, std::vector<const char *> flags, const char * help_mess = "");
-
-// template specialization for a char * requires you to provide buffer length
-// std::string uses the generic syntax
-Var<char> char_array_syntax(char * array, std::vector<const char *> flags, bool takes_args, int buffer_length, const char * help_mess = "");
 
 p.add_subcommand(const char * name_of_subcommand, subcommand, const char * help_mess = "");
 // subcommand is a function of type "void function(int argc, char ** argv, void * data)"
@@ -46,6 +92,7 @@ p.generate_help(argv[0]);
 // data is an object/literal with data you want to pass to the subcommand.
 non_options = p.parse(argc, argv, &data);
 ```
+
 where `T` is the type of the variable and `variable_name_var` is a stack allocated variable. Single char flags have a dash while multichar flags have two dashes. Supports any flag syntax you would expect from a POSIX standard program, including
 
  -  `-fValue`
@@ -101,11 +148,9 @@ While the source code itself is standard c++11, the test program's Makefile uses
     
 4.  [Exception Throwing](#exception-throwing)
 
-5.  [Example Usage](#example-usage)
+5.  [Help Message](#help-message)
 
-6.  [Help Message](#help-message)
-
-7.  [More Complex Command Line Parsing](#more-complex-command-line-parsing)
+6.  [More Complex Command Line Parsing](#more-complex-command-line-parsing)
 
     1.  [Subcommands](#subcommands)
     
@@ -121,11 +166,11 @@ While the source code itself is standard c++11, the test program's Makefile uses
 	
     5.  [Adding Your Own Extensions](#adding-your-own-extensions)
     
-8.  [Goals](#goals)
+7.  [Goals](#goals)
 
-9.  [Goals Completed](#goals-completed)
+8.  [Goals Completed](#goals-completed)
 
-10. [License](#license)
+9.  [License](#license)
 
 ## Why I Wrote This Library
 -   Every non-trivial program has to parse command line arguments, which leaves programmers often writing their own parsers for each individual project even though they are often writing the same inefficient, rigid, and unnecessarily complex algorithms.
@@ -138,7 +183,7 @@ While the source code itself is standard c++11, the test program's Makefile uses
 
     -   For starters, I don't include half the STL to parse the command line, which keeps executables much smaller than other CLI libraries.
 
-    -   This library is also way more flexible than most other libraries. It understands that its only job is to organize data on the command line so that it becomes much easier for you to read (and also document itself through the automatic help generation).
+    -   This library is also way more flexible than most other libraries. It understands that its only job is to organize data on the command line so that it becomes much easier for you to read. It also documents itself using the automatic help generation.
 
 ## Getting Started
 As it currently stands, the entire product is valid c++11 except for the makefiles for compiling the projects.
@@ -222,47 +267,6 @@ Having a `-l` in a group of multiple short arguments such as `-albc` will throw 
 The library will throw exceptions (`std::invalid_argument`) when you provide a flag on the command line that you did not specify (except for the single hyphen flag for standard input), provide an argument to a flag that does not take arguments, leave out an argument to a flag that does take arguments, or try to use a short option whose location on the command line matters inside a group of short options. When the library throws an argument, it will tell you the error and which flag caused the error.
 
 The library will also throw an `std::runtime_error` if there is a problem with writing the help files.
-
-## Example Usage
-```cpp
-#include "cpp_cli.h"
-
-void sample_subcommand(int argc, char ** argv, void * data);
-
-int main(int argc, char ** argv){
-  std::string filename = "";
-  int recursion_level = 0;
-  std::string show_output = "";
-  bool standard_input = false;
-  char c_version_of_string[20];
-  char file_type = '\0';
-  std::vector<int> list_of_ints;
-  std::vector<const char *> non_options;
-
-  {
-    using namespace cpp_cli;
-    Var<std::string> filename_var(filename, { "o", "output", "out" }, true);
-    Var<int> recursion_level_var(recursion_level, { "r", "recursion", "max_depth" }, true);
-    Var<std::string> show_output_var(show_output, { "show_output", "s", "no_out", "half_out" }, false);
-    Var<char> c_version_of_string_var(c_version_of_string, { "v" }, false, 20);
-    
-    Value<bool> standard_input_var(standard_input, { "-" }, true);
-    Value<char> file_type_file_var(file_type, { "file", "f" }, 'f');
-    Value<char> file_type_dir_var(file_type, { "d", "dir", "directory" }, 'd');
-    Value<char> file_type_link_var(file_type, { "l", "link" }, 'l');
-    
-    Vector<int> list_of_ints_var(list_of_ints, { "list", "L" });
-    
-    Parser::add_subcommand(sample_subcommand, "test");
-
-    // The third argument argument isn't necessary to set in this simple example.
-    non_options = Parser::parse(argc, argv);
-  }
-  
-  // Other code. At this point, all variables are set and the "test" subcommand has been run if it was on the command line.
-}
-```
-You can't get much simpler than two lines per variable (half of which are just initializing the variable anyway), but if you want to do more complicated things, you will have to get more complicated.
 
 ## Help Message
 This library can automatically generate a help message by calling `Parser::generate_help(argv[0])`, which will generate a help message and store it in a file within the directory you specify named ".X_help_message", where "X" is the name of each subcommand leading up to and including the current subcommand. For instance, if git used this library, the command "git push" would produce the file ".git_push_help_message" while just "git" would produce ".git_help_message".
