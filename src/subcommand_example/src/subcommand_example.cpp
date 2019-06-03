@@ -64,10 +64,6 @@ int main(int argc, char ** argv) {
 }
 
 void push_prog(int argc, char ** argv, void * data) {
-	std::cout << "argc for push: " << argc << "\n";
-	for (int i = 0; i < argc; i++) {
-		std::cout << i << "\t" << argv[i] << "\n";
-	}
 	using namespace cli;
 	Parser p;
 	Main_Subcommand_Variables * fixed_data = static_cast<Main_Subcommand_Variables*>(data);
@@ -99,10 +95,6 @@ void push_prog(int argc, char ** argv, void * data) {
 }
 
 void pull_prog(int argc, char ** argv, void * data) {
-	std::cout << "argc for pull: " << argc << "\n";
-	for (int i = 0; i < argc; i++) {
-		std::cout << i << "\t" << argv[i] << "\n";
-	}
 	using namespace cli;
 	Parser p;
 	(void)data;
@@ -133,10 +125,6 @@ void pull_prog(int argc, char ** argv, void * data) {
 }
 
 void test_prog(int argc, char ** argv, void * data) {
-	std::cout << "argc for test: " << argc << "\n";
-	for (int i = 0; i < argc; i++) {
-		std::cout << i << "\t" << argv[i] << "\n";
-	}
 	using namespace cli;
 	Parser p;
 	int underwear_count = 0;

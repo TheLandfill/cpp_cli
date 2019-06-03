@@ -60,24 +60,12 @@ inline void CLI_Help::set_help_file_path(std::string hfp) {
 }
 
 inline void CLI_Help::generate_help(const char * subcommand_name, std::vector<const char *> subcommand_aliases, std::vector<CLI_Interface *> list_of_cmd_var) {
-	std::cout << "Subcommand_name: " << subcommand_name << "\n";
-	for (size_t i = 0; i < subcommand_aliases.size(); i++) {
-		std::cout << i << "\t" << subcommand_aliases[i] << "\n";
-	}
-	std::cout << "\nlist_of_cmd_var\n";
-	for (size_t i = 0; i < list_of_cmd_var.size(); i++) {
-		std::cout << i << "\t" << list_of_cmd_var[i]->get_help_message() << "\n";
-	}
 	if (subcommand_name[0] == '.' && subcommand_name[1] == '/') {
 		subcommand_name += 2;
 	}
 	current_command_list.push_back(subcommand_name);
-	for (size_t i = 0; i < current_command_list.size(); i++) {
-		std::cout << i << "\t" << current_command_list[i] << "\n";
-	}
 	std::string buffer;
 	buffer.reserve(2048);
-	std::cout << "Help file path: |" << help_file_path << "|\n";
 	if (help_file_path == "`") {
 		std::string error_message = "The help file path has not been set. "
 		"Use the command 'CLI_Help::set_help_file_path(std::string hfn)' to set a valid file path before calling generate_help. "
@@ -92,15 +80,12 @@ inline void CLI_Help::generate_help(const char * subcommand_name, std::vector<co
 		buffer += "_";
 	}
 	buffer += "help_file";
-	std::cout << "buffer: " << buffer << "\n";
 	set_help_file_name(buffer);
 
 	std::ofstream file_writer;
-	std::cout << "help_file_name: " << help_file_name << "\n";
 	file_writer.open(help_file_name);
 
 	if (!file_writer.is_open()) {
-		std::cout << "exception is thrown because file_writer could not open.\n";
 		std::string error_message;
 		error_message.reserve(1024);
 		error_message += help_file_name;
@@ -108,33 +93,22 @@ inline void CLI_Help::generate_help(const char * subcommand_name, std::vector<co
 		throw std::runtime_error(error_message);
 	}
 
-	std::cout << "Made it past the exception\n";
-
 	buffer = "usage: ";
-	std::cout << "current_command_list size: " << current_command_list.size() << "\n";
 	for (size_t i = 0; i < current_command_list.size(); i++) {
-		std::cout << i << "\t" << current_command_list[i] << "\n";
 		buffer += current_command_list[i];
 		buffer += " ";
 	}
 
 	buffer += usage;
 
-	std::cout << "buffer after usage: " << buffer << "\n";
-
 	print_within_length_stream(buffer, 0, file_writer);
 	file_writer << "\n";
 	print_within_length_stream(header, 0, file_writer);
 	file_writer << "\n";
 
-	std::cout << "printed both buffer and header\n";
-
 	bool any_descriptions = false;
 
-	std::cout << "subcommand_descriptions size: " << subcommand_descriptions.size() << "\n";
-
 	for (size_t i = 0; !any_descriptions && i < subcommand_descriptions.size(); i++) {
-		std::cout << i << "\t" << subcommand_descriptions[i] << "\n";
 		any_descriptions = subcommand_descriptions[i][0] != '`';
 	}
 
