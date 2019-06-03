@@ -1,62 +1,113 @@
-PRODUCT := CMD_PARSER_TEST
+PRODUCT := cli-test
+DEBUG_PRODUCT := $(PRODUCT)-debug
 BINDIR  := .
 INCDIR  := ../includes
 INCDIR_EXT := ../external_includes
 LIBDIR	:= ../libs
 SRCDIR  := ../src
 OBJDIR  := ../obj
+RELEASE_OBJDIR := $(OBJDIR)/release/
+DEBUG_OBJDIR := $(OBJDIR)/debug/
 
 MKDIR_P = mkdir -p
 
-CXX := g++
+# Language --------------------------------------------------------------------
+EXTENSION := cpp
+LANGUAGE_STANDARD := -std=c++11
+COMPILER := g++
 LINKER := g++
+
+# Flags -----------------------------------------------------------------------
+# ----- General ---------------------------------------------------------------
 INCLUDES := -I$(INCDIR) -I$(INCDIR_EXT)
 LIBRARIES := -L$(LIBDIR)
-CXXFLAGS := -O3 -Wall -Wextra -std=c++11 -MMD -MP -ffunction-sections -fdata-sections -flto
+WARNING_FLAGS := -Wall -Wextra
+DEPENDENCY_GENERATION_FLAGS := -MMD -MP
 
-# Finds all .cpp files and puts them into SRC
-SRC := $(wildcard $(SRCDIR)/*.cpp)
-# Creates .o files for every .cpp file in SRC (patsubst is pattern substitution)
-OBJ := $(patsubst $(SRCDIR)/%.cpp,$(OBJDIR)/%.o,$(SRC))
-# Creates .d files (dependencies) for every .cpp file in SRC
-DEP := $(patsubst $(SRCDIR)/%.cpp,$(OBJDIR)/%.d,$(SRC))
+# ----- Release ---------------------------------------------------------------
+UNUSED_CODE_COMPILER_FLAGS := -ffunction-sections -fdata-sections -flto
+OPTIMIZATION_LEVEL := -O3
+RELEASE_FLAGS := $(OPTIMIZATION_LEVEL) $(UNUSED_CODE_COMPILER_FLAGS)
+RELEASE_LINKER_FLAGS := -Wl,--gc-sections
+RELEASE_MACROS :=
+
+# ----- Debug -----------------------------------------------------------------
+DEBUG_FLAGS := -O0 -g
+DEBUG_MACROS := 
+
+
+
+
+
+
+# -----------------------------------------------------------------------------
+# DON'T MESS WITH ANYTHING AFTER THIS UNLESS YOU KNOW WHAT YOU'RE DOING -------
+# -----------------------------------------------------------------------------
+
+GENERAL_COMPILER_FLAGS := $(LANGUAGE_STANDARD) $(WARNING_FLAGS) $(DEPENDENCY_GENERATION_FLAGS)
+
+LINKER_FLAGS := $(RELEASE_LINKER_FLAGS)
+COMPILER_FLAGS := $(RELEASE_FLAGS) $(GENERAL_COMPILER_FLAGS) $(RELEASE_MACROS)
+
+# Finds all .$(EXTENSION) files and puts them into SRC
+SRC := $(wildcard $(SRCDIR)/*.$(EXTENSION))
+# Creates .o files for every .$(EXTENSION) file in SRC (patsubst is pattern substitution)
+RELEASE_OBJ := $(patsubst $(SRCDIR)/%.$(EXTENSION),$(RELEASE_OBJDIR)/%.o,$(SRC))
+DEBUG_OBJ := $(patsubst $(SRCDIR)/%.$(EXTENSION),$(DEBUG_OBJDIR)/%.o,$(SRC))
+# Creates .d files (dependencies) for every .$(EXTENSION) file in SRC
+DEP := $(patsubst $(SRCDIR)/%.$(EXTENSION),$(OBJDIR)/%.d,$(SRC))
 # Finds all lib*.a files and puts them into LIB
 LIB := $(wildcard $(LIBDIR)/lib*.a)
 
-
 # $^ is list of dependencies and $@ is the target file
 # Link all the object files or make a library
-$(BINDIR)/$(PRODUCT): directories $(OBJ) $(LIB) remove_help
+$(BINDIR)/$(PRODUCT): directories $(RELEASE_OBJ) $(LIB)
 # 	Make a library
-#	ar rcs $(BINDIR)/$(PRODUCT) $(OBJ) $(LIB)
+#	ar rcs $(BINDIR)/$(PRODUCT) $(RELEASE_OBJ) $(LIB)
 #	Make a program
-	$(LINKER) -Wl,--gc-sections $(CXXFLAGS) $(OBJ) $(LIB) -o $@
+	$(LINKER) $(LINKER_FLAGS) $(COMPILER_FLAGS) $(RELEASE_OBJ) $(LIB) -o $@
 
-# Compile individual .cpp source files into object files
-$(OBJDIR)/%.o: $(SRCDIR)/%.cpp
-	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
+$(BINDIR)/$(DEBUG_PRODUCT): directories $(DEBUG_OBJ) $(LIB)
+#	Make a library
+#	ar rcs $(BINDIR)/$(DEBUG_PRODUCT) $(DEBUG_OBJ) $(LIB)
+#	Make a program
+	$(LINKER) $(LINKER_FLAGS) $(COMPILER_FLAGS) $(DEBUG_OBJ) $(LIB) -o $@
 
-# -MM flag on gcc gets the dependency files
-# $< is the first dependency, which is usually the .cpp file
-# Get the dependency files
-#$(OBJDIR)/%.cpp.d: $(SRCDIR)/%.cpp
-#	$(CXX) $(INCLUDES) -MM $< | sed -e 's%^%$@ %' -e 's% % $(OBJDIR)/%' > $@
+# Compile individual .$(EXTENSION) source files into object files
+$(RELEASE_OBJDIR)/%.o: $(SRCDIR)/%.$(EXTENSION)
+	$(COMPILER) $(COMPILER_FLAGS) $(INCLUDES) -c $< -o $@
+
+$(DEBUG_OBJDIR)/%.o: $(SRCDIR)/%.$(EXTENSION)
+	$(COMPILER) $(COMPILER_FLAGS) $(INCLUDES) -c $< -o $@
 
 -include $(DEP)
 
 .PHONY: directories
 
-directories: $(OBJDIR)
+directories: $(OBJDIR) $(RELEASE_OBJDIR) $(DEBUG_OBJDIR)
 
 $(OBJDIR):
 	$(MKDIR_P) $(OBJDIR)
 
+$(RELEASE_OBJDIR):
+	$(MKDIR_P) $(RELEASE_OBJDIR)
+
+$(DEBUG_OBJDIR):
+	$(MKDIR_P) $(DEBUG_OBJDIR)
+
 .PHONY: clean
 
-clean: remove_help
-	rm -f $(OBJDIR)/* $(PRODUCT)
+clean:
+	rm -rf $(OBJDIR)/* $(PRODUCT) $(DEBUG_PRODUCT) $(BINDIR)/.*_help_file
 
-.PHONY: remove_help
+.PHONY: release
 
-remove_help:
-	rm -f $(BINDIR)/.*_help_file
+release: COMPILER_FLAGS := $(RELEASE_FLAGS) $(GENERAL_COMPILER_FLAGS)
+release: LINKER_FLAGS := $(RELEASE_LINKER_FLAGS)
+release: directories $(RELEASE_OBJ) $(BINDIR)/$(PRODUCT)
+
+.PHONY: debug
+
+debug: COMPILER_FLAGS := $(DEBUG_FLAGS) $(GENERAL_COMPILER_FLAGS)
+debug: LINKER_FLAGS := 
+debug: directories $(DEBUG_OBJ) $(BINDIR)/$(DEBUG_PRODUCT)
