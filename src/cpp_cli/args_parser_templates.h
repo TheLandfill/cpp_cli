@@ -12,6 +12,7 @@ protected:
 	const char * help_message;
 public:
 	CLI_Interface(void * b_v, std::vector<const char *> a, bool ta, const char * hm = "");
+	virtual ~CLI_Interface() = default;
 	const std::vector<const char *>& get_aliases() const;
 	bool takes_args() const;
 	bool ignored() const;

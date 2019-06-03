@@ -12,7 +12,7 @@ CXX := g++
 LINKER := g++
 INCLUDES := -I$(INCDIR) -I$(INCDIR_EXT)
 LIBRARIES := -L$(LIBDIR)
-CXXFLAGS := -O3 -Wall -Wextra -std=c++11 -MMD -MP -ffunction-sections -fdata-sections -flto
+CXXFLAGS := -O0 -ggdb -Wall -Wextra -std=c++11 -MMD -MP -ffunction-sections -fdata-sections -flto
 
 # Finds all .cpp files and puts them into SRC
 SRC := $(wildcard $(SRCDIR)/*.cpp)

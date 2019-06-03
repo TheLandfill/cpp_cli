@@ -10,18 +10,17 @@ bool help = false;
 
 struct Main_Subcommand_Variables {
 	std::string file_path;
-	char verbosity[20];
+	size_t verbosity = 0;
 	std::vector<const char *> non_options;
-	Main_Subcommand_Variables() : verbosity("\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0") {}
 };
 
 int main(int argc, char ** argv) {
 	using namespace cli;
 	Parser p;
 	Main_Subcommand_Variables msv;
-	Var<std::string> file_path_var(msv.file_path, { "path", "p" }, true, "Dummy variable.");
-	Var<char> verbosity_var(msv.verbosity, { "v" }, false, 20, "Dummy variable.");
-	Value<bool> help_var(help, { "h", "help" }, true, "Prints this help message and exits.");
+	p.arg(msv.file_path, { "path", "p" }, "Dummy variable.");
+	p.repeated(msv.verbosity, { "v" }, "Dummy variable.");
+	p.value(help, { "h", "help" }, true, "Prints this help message and exits.");
 	
 	p.add_subcommand("pull", pull_prog, "Does something like 'git pull' if this program actually did anything.");
 	p.add_subcommand("push", push_prog, "Does something like 'git push' if this program actually did anything.");
@@ -65,12 +64,16 @@ int main(int argc, char ** argv) {
 }
 
 void push_prog(int argc, char ** argv, void * data) {
+	std::cout << "argc for push: " << argc << "\n";
+	for (int i = 0; i < argc; i++) {
+		std::cout << i << "\t" << argv[i] << "\n";
+	}
 	using namespace cli;
 	Parser p;
 	Main_Subcommand_Variables * fixed_data = static_cast<Main_Subcommand_Variables*>(data);
 	std::string URL = "";
-	Var<std::string> URL_var(URL, { "u", "URL" }, true, "Sets the URL.");
-	Value<bool> help_var(help, { "h", "help" }, true, "Displays this help message and exits.");
+	p.arg(URL, { "u", "URL" }, "Sets the URL.");
+	p.value(help, { "h", "help" }, true, "Displays this help message and exits.");
 
 	p.add_subcommand("test", test_prog);
 	p.generate_help(argv[0]);
@@ -96,14 +99,18 @@ void push_prog(int argc, char ** argv, void * data) {
 }
 
 void pull_prog(int argc, char ** argv, void * data) {
+	std::cout << "argc for pull: " << argc << "\n";
+	for (int i = 0; i < argc; i++) {
+		std::cout << i << "\t" << argv[i] << "\n";
+	}
 	using namespace cli;
 	Parser p;
 	(void)data;
 	std::string URL = "";
 	unsigned long long timeout = 100;
-	Var<std::string> URL_var(URL, { "u", "URL" }, true, "Sets the URL.");
-	Var<unsigned long long> timeout_var(timeout, { "t", "timeout" }, true, "Sets the amount of time before a timeout.");
-	Value<bool> help_var(help, { "h", "help" }, true, "Displays this help message and exits.");
+	p.arg(URL, { "u", "URL" }, "Sets the URL.");
+	p.arg(timeout, { "t", "timeout" }, "Sets the amount of time before a timeout.");
+	p.value(help, { "h", "help" }, true, "Displays this help message and exits.");
 	p.generate_help(argv[0]);
 	try {
 		p.parse(argc, argv, nullptr);
@@ -126,14 +133,18 @@ void pull_prog(int argc, char ** argv, void * data) {
 }
 
 void test_prog(int argc, char ** argv, void * data) {
+	std::cout << "argc for test: " << argc << "\n";
+	for (int i = 0; i < argc; i++) {
+		std::cout << i << "\t" << argv[i] << "\n";
+	}
 	using namespace cli;
 	Parser p;
 	int underwear_count = 0;
 	double EURL = -1;
 
-	Var<int> underwear_count_var(underwear_count, { "u" }, true, "Sets the number of underwear currently available. Note that this has no idea that '-u' corresponded to the URL variable in the push subcommand.");
-	Var<double> EURL_var(EURL, { "e", "E", "EURL", "URL" }, true, "Sets the value of EURL. Note that '--URL' and '-u' correspond to completely different variables.");
-	Value<bool> help_var(help, { "h", "help" }, true, "Displays this help message and exits.");
+	p.arg(underwear_count, { "u" }, "Sets the number of underwear currently available. Note that this has no idea that '-u' corresponded to the URL variable in the push subcommand.");
+	p.arg(EURL, { "e", "E", "EURL", "URL" }, "Sets the value of EURL. Note that '--URL' and '-u' correspond to completely different variables.");
+	p.value(help, { "h", "help" }, true, "Displays this help message and exits.");
 
 	p.set_usage("\n\tTest.");
 
