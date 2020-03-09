@@ -32,7 +32,7 @@ public:
 
 	void generate_help(const char * subcommand_name, std::vector<const char *> subcommand_aliases, std::vector<CLI_Interface *> list_of_cmd_var);
 	void print_help();
-	
+
 };
 
 inline void CLI_Help::set_header(std::string h) {
@@ -60,8 +60,10 @@ inline void CLI_Help::set_help_file_path(std::string hfp) {
 }
 
 inline void CLI_Help::generate_help(const char * subcommand_name, std::vector<const char *> subcommand_aliases, std::vector<CLI_Interface *> list_of_cmd_var) {
-	if (subcommand_name[0] == '.' && subcommand_name[1] == '/') {
-		subcommand_name += 2;
+	const size_t last_slash_idx = std::string(subcommand_name).find_last_of("\\/");
+	if (std::string::npos != last_slash_idx)
+	{
+		subcommand_name += last_slash_idx;
 	}
 	current_command_list.push_back(subcommand_name);
 	std::string buffer;
@@ -130,7 +132,7 @@ inline void CLI_Help::generate_help(const char * subcommand_name, std::vector<co
 		buffer = "";
 		if (clv->get_help_message()[0] != '`') {
 			const char * n_dash = "--";
-			
+
 			for (size_t j = 0; j < a.size(); j++) {
 				buffer += n_dash + (a[j][1] == '\0') * (1 + (a[j][0] == '-'));
 				buffer += a[j];
@@ -142,7 +144,7 @@ inline void CLI_Help::generate_help(const char * subcommand_name, std::vector<co
 			file_writer << buffer << "\n";
 			print_within_length_stream(std::string(clv->get_help_message()), 8, file_writer);
 		}
-	}	
+	}
 	file_writer << "\n";
 	print_within_length_stream(footer, 0, file_writer);
 	file_writer.close();
